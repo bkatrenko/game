@@ -1,0 +1,3 @@
+UDP_ADDRESS=localhost:8080 HTTP_ADDRESS=localhost:8081 ./srv
+
+UDP_SERVER_HOST_PORT=localhost:8080 HTTP_SERVER_HOST_PORT=http://localhost:8081 PLAYER_ID=bkatrenko GAME_ID=1 PLAYER_NUMBER=0 ./game

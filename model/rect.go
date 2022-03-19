@@ -1,0 +1,144 @@
+package model
+
+import (
+	"github.com/deeean/go-vector/vector2"
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
+const (
+	MessageTypeError = 13
+)
+
+const (
+	frictionForce float64 = 0.03
+
+	ScreenWidth  = 640
+	ScreenHeight = 480
+)
+
+type (
+	Rect struct {
+		ID    string
+		Image *ebiten.Image
+		Width,
+		Height float64
+		Vector vector2.Vector2
+		//X,
+		//Y,
+
+		PrevX,
+		PrevY float64
+		Speed      vector2.Vector2
+		SpeedLimit float64
+		// SpeedX,
+		// SpeedY float64
+	}
+)
+
+func (r *Rect) HasCollisionWith(rect Rect) bool {
+	return r.Vector.Distance(&rect.Vector) < r.Width*2
+	// circle collision
+	// dx := (r.X + (r.Width / 2)) - (rect.X + (rect.Width / 2))
+	// dy := (r.Y + (r.Width / 2)) - (rect.Y + (rect.Width / 2))
+
+	// dist := math.Sqrt((dx * dx) + (dy * dy))
+	// return dist < r.Width+rect.Width
+
+	// rect collision
+	// return r.X < (rect.X+rect.Width) &&
+	// 	(r.X+r.Width) > rect.X &&
+	// 	r.Y < (rect.Y+rect.Height) &&
+	// 	(r.Height+r.Y) > rect.Y
+}
+
+func (r *Rect) UpdateXY(x, y, screenHeight, screenWidth float64) {
+	r.PrevX = r.Vector.X
+	r.PrevY = r.Vector.Y
+
+	r.Vector.X += x
+	r.Vector.Y += y
+
+	if r.ReflectFromScreen(screenHeight, screenWidth) {
+		r.Vector.X -= x
+		r.Vector.Y -= y
+	}
+}
+
+func (r *Rect) CalculateSpeed() {
+	r.Speed.X = r.Vector.X - r.PrevX
+	r.Speed.Y = r.Vector.Y - r.PrevY
+
+	if r.SpeedLimit > 0 {
+		if r.Speed.X >= r.SpeedLimit {
+			r.Speed.X = r.SpeedLimit
+		}
+		if r.Speed.Y >= r.SpeedLimit {
+			r.Speed.Y = r.SpeedLimit
+		}
+	}
+}
+
+func (r *Rect) AddSpeed(speedX, speedY float64) {
+	r.Speed.X += speedX
+	r.Speed.Y += speedY
+}
+
+func (r *Rect) RestrictSpeedLimit() {
+	if r.Speed.X >= r.SpeedLimit {
+		r.Speed.X = r.SpeedLimit
+	}
+	if r.Speed.Y >= r.SpeedLimit {
+		r.Speed.Y = r.SpeedLimit
+	}
+}
+
+func (r *Rect) SlowDown() {
+	if r.Speed.X > 0 {
+		r.Speed.X -= frictionForce
+	}
+
+	if r.Speed.Y > 0 {
+		r.Speed.Y -= frictionForce
+	}
+
+}
+
+// func (r *Rect) ReflectFrom(rect Rect) {
+// 	//tmp := r.Speed
+// 	r.Speed = *r.Speed.Reflect(&rect.Speed)
+
+// 	r.Speed.X *= 2
+// 	r.Speed.Y *= 2
+// }
+
+func (r *Rect) ReflectFromScreen(screenHeight, screenWidth float64) bool {
+	if r.Vector.Y+r.Height >= screenHeight {
+		r.Speed.Y = -r.Speed.Y
+		r.Vector.Y += r.Speed.Y
+
+		return true
+	}
+
+	if r.Vector.X+r.Width >= screenWidth {
+		r.Speed.X = -r.Speed.X
+		r.Vector.X += r.Speed.X
+
+		return true
+	}
+
+	if r.Vector.Y <= 0 {
+		r.Speed.Y = -r.Speed.Y
+		r.Vector.Y += r.Speed.Y
+
+		return true
+	}
+
+	if r.Vector.X <= 0 {
+		r.Speed.X = -r.Speed.X
+		r.Vector.X += r.Speed.X
+
+		return true
+	}
+
+	return false
+}
