@@ -1,3 +1,13 @@
 UDP_ADDRESS=localhost:8080 HTTP_ADDRESS=localhost:8081 ./srv
 
 UDP_SERVER_HOST_PORT=localhost:8080 HTTP_SERVER_HOST_PORT=http://localhost:8081 PLAYER_ID=bkatrenko GAME_ID=1 PLAYER_NUMBER=0 ./game
+
+
+UDP_ADDRESS=localhost:8080 HTTP_ADDRESS=localhost:8081 ./srv
+
+UDP_SERVER_HOST_PORT=3.249.161.236:8080 HTTP_SERVER_HOST_PORT=http://3.249.161.236:8081 PLAYER_ID=bkatrenko GAME_ID=1 PLAYER_NUMBER=0 ./game
+
+UDP_SERVER_HOST_PORT=3.249.161.236:8080 HTTP_SERVER_HOST_PORT=http://3.249.161.236:8081 PLAYER_ID=someone GAME_ID=1 PLAYER_NUMBER=0 ./game
+
+
+scp -i /Users/bogdankatreko/keys/helpua.pem ./srv ubuntu@3.249.161.236:/home/ubuntu

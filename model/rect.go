@@ -1,7 +1,8 @@
 package model
 
 import (
-	"github.com/deeean/go-vector/vector2"
+	"math"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -10,7 +11,7 @@ const (
 )
 
 const (
-	frictionForce float64 = 0.03
+	frictionForce float32 = 0.03
 
 	ScreenWidth  = 640
 	ScreenHeight = 480
@@ -18,25 +19,35 @@ const (
 
 type (
 	Rect struct {
-		ID    string
-		Image *ebiten.Image
-		Width,
-		Height float64
-		Vector vector2.Vector2
-		//X,
-		//Y,
+		ID     string        `json:"id"`
+		Image  *ebiten.Image `json:"-"`
+		Width  float32       `json:"w"`
+		Height float32       `json:"h"`
+		Vector Vector        `json:"vc"`
 
-		PrevX,
-		PrevY float64
-		Speed      vector2.Vector2
-		SpeedLimit float64
-		// SpeedX,
-		// SpeedY float64
+		PrevX      float32 `json:"px"`
+		PrevY      float32 `json:"py"`
+		Speed      Vector  `json:"s"`
+		SpeedLimit float32 `json:"sl"`
+	}
+
+	Vector struct {
+		X, Y float32
 	}
 )
 
+func (v Vector) Distance(in Vector) float32 {
+	dx := v.X - in.X
+	dy := v.Y - in.Y
+	return float32(math.Sqrt(float64(dx*dx + dy*dy)))
+}
+
+func NewVector(x, y float32) Vector {
+	return Vector{X: x, Y: y}
+}
+
 func (r *Rect) HasCollisionWith(rect Rect) bool {
-	return r.Vector.Distance(&rect.Vector) < r.Width*2
+	return float32(r.Vector.Distance(rect.Vector)) < r.Width*2
 	// circle collision
 	// dx := (r.X + (r.Width / 2)) - (rect.X + (rect.Width / 2))
 	// dy := (r.Y + (r.Width / 2)) - (rect.Y + (rect.Width / 2))
@@ -51,7 +62,7 @@ func (r *Rect) HasCollisionWith(rect Rect) bool {
 	// 	(r.Height+r.Y) > rect.Y
 }
 
-func (r *Rect) UpdateXY(x, y, screenHeight, screenWidth float64) {
+func (r *Rect) UpdateXY(x, y, screenHeight, screenWidth float32) {
 	r.PrevX = r.Vector.X
 	r.PrevY = r.Vector.Y
 
@@ -62,6 +73,11 @@ func (r *Rect) UpdateXY(x, y, screenHeight, screenWidth float64) {
 		r.Vector.X -= x
 		r.Vector.Y -= y
 	}
+}
+
+func (r *Rect) UpdateXYClient(x, y, screenHeight, screenWidth float32) {
+	r.Vector.X += x
+	r.Vector.Y += y
 }
 
 func (r *Rect) CalculateSpeed() {
@@ -78,7 +94,7 @@ func (r *Rect) CalculateSpeed() {
 	}
 }
 
-func (r *Rect) AddSpeed(speedX, speedY float64) {
+func (r *Rect) AddSpeed(speedX, speedY float32) {
 	r.Speed.X += speedX
 	r.Speed.Y += speedY
 }
@@ -111,7 +127,7 @@ func (r *Rect) SlowDown() {
 // 	r.Speed.Y *= 2
 // }
 
-func (r *Rect) ReflectFromScreen(screenHeight, screenWidth float64) bool {
+func (r *Rect) ReflectFromScreen(screenHeight, screenWidth float32) bool {
 	if r.Vector.Y+r.Height >= screenHeight {
 		r.Speed.Y = -r.Speed.Y
 		r.Vector.Y += r.Speed.Y

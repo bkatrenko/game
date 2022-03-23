@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	serverUpdateAfter = time.Millisecond * 20
+	serverUpdateAfter = time.Millisecond * 10
 )
 
 var (
@@ -83,7 +83,7 @@ func (g *Game) Update() error {
 	player := g.state.GetCurrentPlayer()
 
 	player.RestrictSpeedLimit()
-	player.UpdateXY(dx, dy, model.ScreenHeight, model.ScreenWidth)
+	player.UpdateXY(float32(dx), float32(dy), model.ScreenHeight, model.ScreenWidth)
 	player.CalculateSpeed()
 
 	g.state.SetCurrentPlayer(player)
@@ -100,15 +100,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	text.Draw(screen, fmt.Sprint(g.state.Player2Score), player2Score, model.ScreenWidth/2+50, 20, color.White)
 
 	opPlayer1 := &ebiten.DrawImageOptions{}
-	opPlayer1.GeoM.Translate(g.state.Player1.Vector.X, g.state.Player1.Vector.Y)
+	opPlayer1.GeoM.Translate(float64(g.state.Player1.Vector.X), float64(g.state.Player1.Vector.Y))
 	screen.DrawImage(pointerImage, opPlayer1)
 
 	opPlayer2 := &ebiten.DrawImageOptions{}
-	opPlayer2.GeoM.Translate(g.state.Player2.Vector.X, g.state.Player2.Vector.Y)
+	opPlayer2.GeoM.Translate(float64(g.state.Player2.Vector.X), float64(g.state.Player2.Vector.Y))
 	screen.DrawImage(opponentImage, opPlayer2)
 
 	opBall := &ebiten.DrawImageOptions{}
-	opBall.GeoM.Translate(g.state.Ball.Vector.X, g.state.Ball.Vector.Y)
+	opBall.GeoM.Translate(float64(g.state.Ball.Vector.X), float64(g.state.Ball.Vector.Y))
 	screen.DrawImage(ballImage, opBall)
 
 	ebitenutil.DebugPrint(screen,
@@ -125,7 +125,8 @@ func (g *Game) run() {
 	go func() {
 		for {
 			<-ticker.C
-			currentState, err := json.Marshal(g.state)
+
+			currentState, err := json.Marshal(g.state.SendPlayerPos())
 			if err != nil {
 				println("error while marshal state", err.Error())
 				continue
@@ -143,14 +144,25 @@ func (g *Game) run() {
 				continue
 			}
 
-			//fmt.Println("??? ID:", state.CameFrom, state.Player1.ID)
 			if state.MessageType == model.MessageTypeError {
 				println("error from server received:", state.Message)
 				continue
 			}
 
 			g.mu.Lock()
-			g.state = state
+			if g.state.Player1.ID != state.CameFrom {
+				g.state.Player1 = state.Player1
+			}
+
+			if g.state.Player2.ID != state.CameFrom {
+				g.state.Player2 = state.Player2
+			}
+
+			g.state.Ball = state.Ball
+
+			g.state.Player1Score = state.Player1Score
+			g.state.Player2Score = state.Player2Score
+
 			g.mu.Unlock()
 		}
 

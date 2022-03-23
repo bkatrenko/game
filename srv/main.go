@@ -10,7 +10,7 @@ const (
 	// are used to temporarily hold data from the UDP packets
 	// that we receive.
 	maxBufferSize = 1024
-	udpTimeout    = time.Millisecond * 50
+	udpTimeout    = time.Millisecond * 200
 )
 
 func main() {
@@ -18,8 +18,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	server := newServer(config, newProc())
+	p := newProc()
+	server := newServer(config, p)
+	go p.startModifier()
 	go server.runUDPServer(context.Background())
 	server.runHTTPServer(context.Background())
 }

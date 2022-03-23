@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"game/model"
+
 	"net/http"
 	"time"
 
@@ -29,7 +29,7 @@ func (s *server) runHTTPServer(ctx context.Context) error {
 	r.Use(middleware.Timeout(30 * time.Second))
 
 	r.Post("/game/join", func(w http.ResponseWriter, r *http.Request) {
-		var joinMessage model.JoinGame
+		var joinMessage JoinGame
 
 		if err := json.NewDecoder(r.Body).Decode(&joinMessage); err != nil {
 			println("error while decode join request:", err.Error())
