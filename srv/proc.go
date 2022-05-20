@@ -6,17 +6,17 @@ import (
 	"time"
 )
 
-type proc struct {
+type processor struct {
 	games sync.Map
 }
 
-func newProc() *proc {
-	return &proc{
+func newProc() *processor {
+	return &processor{
 		games: sync.Map{},
 	}
 }
 
-func (p *proc) handle(upcomingState State) (State, error) {
+func (p *processor) handle(upcomingState State) (State, error) {
 	currentGame, ok := p.getGame(upcomingState.ID)
 	if !ok {
 		return State{}, fmt.Errorf("can't fine the game with ID: %s", upcomingState.ID)
@@ -29,7 +29,7 @@ func (p *proc) handle(upcomingState State) (State, error) {
 	return currentCame, nil
 }
 
-func (p *proc) join(joinRequest JoinGame) (State, error) {
+func (p *processor) join(joinRequest JoinGame) (State, error) {
 	currentGame, ok := p.getGame(joinRequest.GameID)
 	if !ok {
 		currentGame = p.startStateFromJoin(joinRequest)
@@ -52,7 +52,7 @@ func (p *proc) join(joinRequest JoinGame) (State, error) {
 	return currentGame, nil
 }
 
-func (p *proc) startModifier() {
+func (p *processor) startModifier() {
 	ticker := time.NewTicker(time.Millisecond * 20)
 
 	for {
@@ -82,11 +82,11 @@ func (p *proc) startModifier() {
 
 		}
 
-		// if currentState.Ball.HasCollisionWith(currentState.Player2) {
-		// 	currentState.Ball.ReflectFrom(currentState.Player2)
-		// 	//currentState.Ball.Vector.X += currentState.Ball.Speed.X
-		// 	//currentState.Ball.Vector.Y += currentState.Ball.Speed.Y
-		// }
+		if currentState.Ball.HasCollisionWith(currentState.Player2) {
+			currentState.Ball.ReflectFrom(currentState.Player2)
+			currentState.Ball.Vector.X += currentState.Ball.Speed.X
+			currentState.Ball.Vector.Y += currentState.Ball.Speed.Y
+		}
 
 		currentState = p.checkPlayer1Goal(currentState)
 		currentState = p.checkPlayer2Goal(currentState)
@@ -96,7 +96,7 @@ func (p *proc) startModifier() {
 	}
 }
 
-func (p *proc) modifyState(currentState, upcomingState State) State {
+func (p *processor) modifyState(currentState, upcomingState State) State {
 	if upcomingState.CameFrom == currentState.Player1.ID {
 		currentState.Player1 = upcomingState.Player1
 	}
@@ -119,7 +119,7 @@ func (p *proc) modifyState(currentState, upcomingState State) State {
 	return currentState
 }
 
-func (p *proc) checkPlayer1Goal(state State) State {
+func (p *processor) checkPlayer1Goal(state State) State {
 	if state.Ball.Vector.X <= 0+GoalWidth &&
 		state.Ball.Vector.Y >= Player1GoalY &&
 		state.Ball.Vector.Y+BallDiameter <= Player1GoalY+GoalHeight {
@@ -136,7 +136,7 @@ func (p *proc) checkPlayer1Goal(state State) State {
 	return state
 }
 
-func (p *proc) checkPlayer2Goal(state State) State {
+func (p *processor) checkPlayer2Goal(state State) State {
 	if state.Ball.Vector.X+BallDiameter >= ScreenWidth-GoalWidth &&
 		state.Ball.Vector.Y >= Player2GoalY &&
 		state.Ball.Vector.Y+BallDiameter <= Player2GoalY+GoalHeight {
@@ -153,7 +153,7 @@ func (p *proc) checkPlayer2Goal(state State) State {
 	return state
 }
 
-func (p *proc) getGame(id string) (State, bool) {
+func (p *processor) getGame(id string) (State, bool) {
 	state, ok := p.games.Load(id)
 	if !ok {
 		return State{}, false
@@ -167,11 +167,11 @@ func (p *proc) getGame(id string) (State, bool) {
 	return typedState, true
 }
 
-func (p *proc) loadGame(state State) {
+func (p *processor) loadGame(state State) {
 	p.games.Store(state.ID, state)
 }
 
-func (p *proc) startStateFromJoin(joinRequest JoinGame) State {
+func (p *processor) startStateFromJoin(joinRequest JoinGame) State {
 	state := State{
 		ID: joinRequest.GameID,
 		Player1: Rect{

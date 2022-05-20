@@ -19,7 +19,7 @@ type (
 	}
 )
 
-func NewHTTPlient(address string) *HTTP {
+func NewHTTPClient(address string) *HTTP {
 	return &HTTP{
 		addr: address,
 	}

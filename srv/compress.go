@@ -4,19 +4,48 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-// Create a writer that caches compressors.
-// For this operation type we supply a nil Reader.
-var encoder, _ = zstd.NewWriter(nil)
-var decoder, _ = zstd.NewReader(nil)
+type (
+	// compressor is an interface that responsible for compress/decompress data
+	// for send and receive
+	compressor interface {
+		Compress(src []byte) []byte
+		Decompress(src []byte) ([]byte, error)
+	}
+
+	compressorImpl struct {
+		encoder *zstd.Encoder
+		decoder *zstd.Decoder
+	}
+)
+
+func newCompressor() compressor {
+	// Create a writer that caches compressors.
+	// For this operation type we supply a nil Reader.
+	encoder, err := zstd.NewWriter(nil)
+	if err != nil {
+		panic(err)
+	}
+	// NewReader creates a new decoder.
+	// A nil Reader can be provided in which case Reset can be used to start a decode.
+	decoder, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return &compressorImpl{
+		encoder: encoder,
+		decoder: decoder,
+	}
+}
 
 // Compress a buffer.
 // If you have a destination buffer, the allocation in the call can also be eliminated.
-func Compress(src []byte) []byte {
-	return encoder.EncodeAll(src, make([]byte, 0, len(src)))
+func (c *compressorImpl) Compress(src []byte) []byte {
+	return c.encoder.EncodeAll(src, make([]byte, 0, len(src)))
 }
 
 // Decompress a buffer. We don't supply a destination buffer,
 // so it will be allocated by the decoder.
-func Decompress(src []byte) ([]byte, error) {
-	return decoder.DecodeAll(src, nil)
+func (c *compressorImpl) Decompress(src []byte) ([]byte, error) {
+	return c.decoder.DecodeAll(src, nil)
 }

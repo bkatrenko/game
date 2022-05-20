@@ -6,21 +6,21 @@ import (
 	"fmt"
 	"net"
 	"time"
-	//"net"
-	//"time"
 )
 
 type (
 	server struct {
-		proc              *proc
+		proc              *processor
+		compressor        compressor
 		listenAddressUDP  string
 		listenAddressHTTP string
 	}
 )
 
-func newServer(config config, proc *proc) server {
+func newServer(config config, proc *processor, compressor compressor) server {
 	return server{
 		proc:              proc,
+		compressor:        compressor,
 		listenAddressUDP:  config.listenAddressUDP,
 		listenAddressHTTP: config.listenAddressHTTP,
 	}
@@ -43,7 +43,7 @@ func (s *server) runUDPServer(ctx context.Context) error {
 				return
 			}
 
-			decompressed, err := Decompress(buffer[:n])
+			decompressed, err := s.compressor.Decompress(buffer[:n])
 			if err != nil {
 				panic(err)
 			}
@@ -62,13 +62,13 @@ func (s *server) runUDPServer(ctx context.Context) error {
 				return
 			}
 
-			updatedStatem, err := json.Marshal(state.getSendData())
+			updatedState, err := json.Marshal(state.getSendData())
 			if err != nil {
 				println("error while marshal state:", err.Error())
 				return
 			}
 
-			updatedStatem = Compress(updatedStatem)
+			updatedState = s.compressor.Compress(updatedState)
 
 			deadline := time.Now().Add(udpTimeout)
 			err = pc.SetWriteDeadline(deadline)
@@ -77,7 +77,7 @@ func (s *server) runUDPServer(ctx context.Context) error {
 				return
 			}
 
-			_, err = pc.WriteTo(updatedStatem, addr)
+			_, err = pc.WriteTo(updatedState, addr)
 			if err != nil {
 				fmt.Println(err)
 				return

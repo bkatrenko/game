@@ -26,7 +26,7 @@ type Game struct {
 }
 
 func join(config Config) (model.State, error) {
-	state, err := client.NewHTTPlient(config.HTTPServerHostPort).Join(model.JoinGame{
+	state, err := client.NewHTTPClient(config.HTTPServerHostPort).Join(model.JoinGame{
 		GameID:       config.GameID,
 		PlayerNumber: config.PlayerNumber,
 		PlayedID:     config.PlayedID,

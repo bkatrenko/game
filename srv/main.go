@@ -19,7 +19,7 @@ func main() {
 		panic(err)
 	}
 	p := newProc()
-	server := newServer(config, p)
+	server := newServer(config, p, newCompressor())
 	go p.startModifier()
 	go server.runUDPServer(context.Background())
 	server.runHTTPServer(context.Background())
