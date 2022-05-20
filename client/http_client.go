@@ -10,23 +10,22 @@ import (
 
 const (
 	contentType = "application/json"
-
-	joinRoute = "/game/join"
+	joinRoute   = "/game/join"
 )
 
 type (
-	HTTPClient struct {
+	HTTP struct {
 		addr string
 	}
 )
 
-func NewHTTPlient(address string) (*HTTPClient, error) {
-	return &HTTPClient{
+func NewHTTPlient(address string) *HTTP {
+	return &HTTP{
 		addr: address,
-	}, nil
+	}
 }
 
-func (c *HTTPClient) Join(joinRequest model.JoinGame) (model.State, error) {
+func (c *HTTP) Join(joinRequest model.JoinGame) (model.State, error) {
 	joinRequestBytes, err := json.Marshal(joinRequest)
 	if err != nil {
 		return model.State{}, fmt.Errorf("error while marshal join request: %w", err)

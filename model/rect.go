@@ -1,6 +1,7 @@
 package model
 
 import (
+	"image/color"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -48,18 +49,27 @@ func NewVector(x, y float32) Vector {
 
 func (r *Rect) HasCollisionWith(rect Rect) bool {
 	return float32(r.Vector.Distance(rect.Vector)) < r.Width*2
-	// circle collision
-	// dx := (r.X + (r.Width / 2)) - (rect.X + (rect.Width / 2))
-	// dy := (r.Y + (r.Width / 2)) - (rect.Y + (rect.Width / 2))
+}
 
-	// dist := math.Sqrt((dx * dx) + (dy * dy))
-	// return dist < r.Width+rect.Width
+func DrawCircle(screen *ebiten.Image, x, y float64, radius int, clr color.Color, fill bool) {
+	radius64 := float64(radius)
+	minAngle := math.Acos(1 - 1/radius64)
 
-	// rect collision
-	// return r.X < (rect.X+rect.Width) &&
-	// 	(r.X+r.Width) > rect.X &&
-	// 	r.Y < (rect.Y+rect.Height) &&
-	// 	(r.Height+r.Y) > rect.Y
+	for angle := float64(0); angle <= 360; angle += minAngle {
+		xDelta := radius64 * math.Cos(angle)
+		yDelta := radius64 * math.Sin(angle)
+
+		x1 := int(math.Round(x + xDelta))
+		y1 := int(math.Round(y + yDelta))
+
+		screen.Set(x1, y1, clr)
+	}
+
+	if fill && radius > 1 {
+		for r := radius - 1; r >= 1; r-- {
+			DrawCircle(screen, x, y, r, clr, false)
+		}
+	}
 }
 
 func (r *Rect) UpdateXY(x, y, screenHeight, screenWidth float32) {
@@ -119,37 +129,29 @@ func (r *Rect) SlowDown() {
 
 }
 
-// func (r *Rect) ReflectFrom(rect Rect) {
-// 	//tmp := r.Speed
-// 	r.Speed = *r.Speed.Reflect(&rect.Speed)
-
-// 	r.Speed.X *= 2
-// 	r.Speed.Y *= 2
-// }
-
 func (r *Rect) ReflectFromScreen(screenHeight, screenWidth float32) bool {
-	if r.Vector.Y+r.Height >= screenHeight {
+	if r.Vector.Y+BallDiameter >= screenHeight {
 		r.Speed.Y = -r.Speed.Y
 		r.Vector.Y += r.Speed.Y
 
 		return true
 	}
 
-	if r.Vector.X+r.Width >= screenWidth {
+	if r.Vector.X+BallDiameter >= screenWidth {
 		r.Speed.X = -r.Speed.X
 		r.Vector.X += r.Speed.X
 
 		return true
 	}
 
-	if r.Vector.Y <= 0 {
+	if r.Vector.Y-BallDiameter <= 0 {
 		r.Speed.Y = -r.Speed.Y
 		r.Vector.Y += r.Speed.Y
 
 		return true
 	}
 
-	if r.Vector.X <= 0 {
+	if r.Vector.X-BallDiameter <= 0 {
 		r.Speed.X = -r.Speed.X
 		r.Vector.X += r.Speed.X
 

@@ -67,13 +67,26 @@ func (p *proc) startModifier() {
 		currentState.Ball.SlowDown()
 		currentState.Ball.UpdateXY(currentState.Ball.Speed.X, currentState.Ball.Speed.Y, ScreenHeight, ScreenWidth)
 
-		if currentState.Player1.HasCollisionWith(currentState.Ball) {
-			currentState.Ball.AddSpeed(currentState.Player1.Speed.X, currentState.Player1.Speed.Y)
+		//if currentState.Player1.HasCollisionWith(currentState.Ball) {
+		//currentState.Ball.AddSpeed(currentState.Player1.Speed.X, currentState.Player1.Speed.Y)
+		//}
+
+		//if currentState.Player2.HasCollisionWith(currentState.Ball) {
+		//currentState.Ball.AddSpeed(currentState.Player2.Speed.X, currentState.Player2.Speed.Y)
+		//}
+
+		if currentState.Ball.HasCollisionWith(currentState.Player1) {
+			currentState.Ball.ReflectFrom(currentState.Player1)
+			currentState.Ball.Vector.X += currentState.Ball.Speed.X / 2
+			currentState.Ball.Vector.Y += currentState.Ball.Speed.Y / 2
+
 		}
 
-		if currentState.Player2.HasCollisionWith(currentState.Ball) {
-			currentState.Ball.AddSpeed(currentState.Player2.Speed.X, currentState.Player2.Speed.Y)
-		}
+		// if currentState.Ball.HasCollisionWith(currentState.Player2) {
+		// 	currentState.Ball.ReflectFrom(currentState.Player2)
+		// 	//currentState.Ball.Vector.X += currentState.Ball.Speed.X
+		// 	//currentState.Ball.Vector.Y += currentState.Ball.Speed.Y
+		// }
 
 		currentState = p.checkPlayer1Goal(currentState)
 		currentState = p.checkPlayer2Goal(currentState)
@@ -164,7 +177,7 @@ func (p *proc) startStateFromJoin(joinRequest JoinGame) State {
 		Player1: Rect{
 			Width:  PlaneHeight,
 			Height: PlaneHeight,
-			Vector: NewVector(0.0, ScreenHeight/2),
+			Vector: NewVector(50.0, ScreenHeight/2),
 
 			PrevX:      0.0,
 			PrevY:      0.0,

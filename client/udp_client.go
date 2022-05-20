@@ -10,50 +10,42 @@ import (
 )
 
 const (
-	maxBufferSize           = 1024
-	udpTimeout              = time.Millisecond * 30
-	maxConnectionLivingTime = time.Second * 30
+	maxBufferSize = 1024
+	udpTimeout    = time.Millisecond * 15
 )
 
 type (
-	UDPClient struct {
-		conn      *net.UDPConn
-		addr      *net.UDPAddr
-		out       chan []byte
-		connected time.Time
+	UDP struct {
+		conn *net.UDPConn
+		addr *net.UDPAddr
+		out  chan []byte
 	}
 )
 
-func NewUDPClient(address string) (*UDPClient, error) {
+func NewUDPClient(address string) *UDP {
 	raddr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	client := &UDPClient{
+	client := &UDP{
 		out:  make(chan []byte),
 		addr: raddr,
 	}
 
-	client.makeConnection()
-	return client, nil
+	client.connect()
+	return client
 }
 
-func (c *UDPClient) makeConnection() {
+func (c *UDP) connect() {
 	conn, err := net.DialUDP("udp", nil, c.addr)
 	if err != nil {
 		panic(err)
 	}
 	c.conn = conn
-	c.connected = time.Now()
 }
 
-func (c *UDPClient) Send(ctx context.Context, update []byte) ([]byte, error) {
-	// if time.Since(c.connected) > maxConnectionLivingTime {
-	// 	fmt.Println("reconnect")
-	// 	c.makeConnection()
-	// }
-
+func (c *UDP) Send(ctx context.Context, update []byte) ([]byte, error) {
 	update = model.Compress(update)
 	_, err := io.Copy(c.conn, bytes.NewBuffer(update))
 	if err != nil {

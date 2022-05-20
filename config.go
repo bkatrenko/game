@@ -24,8 +24,8 @@ type Config struct {
 	PlayerNumber int8
 }
 
-func getConfig() (Config, error) {
-	config, err := parseConfigFromEnv()
+func getConfigFromEnv() (Config, error) {
+	config, err := parseConfig()
 	if err != nil {
 		return Config{}, fmt.Errorf("error while parse config: %w", err)
 	}
@@ -33,11 +33,12 @@ func getConfig() (Config, error) {
 	return config, validateConfig(config)
 }
 
-func parseConfigFromEnv() (Config, error) {
+func parseConfig() (Config, error) {
 	playerNumber, err := strconv.ParseInt(os.Getenv(PlayerNumber), 10, 8)
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid player number: %w", err)
 	}
+
 	return Config{
 		UDPServerHostPort:  os.Getenv(UDPServerHostPort),
 		HTTPServerHostPort: os.Getenv(HTTPServerHostPort),

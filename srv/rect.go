@@ -45,18 +45,6 @@ func NewVector(x, y float32) Vector {
 
 func (r *Rect) HasCollisionWith(rect Rect) bool {
 	return float32(r.Vector.Distance(rect.Vector)) < r.Width*2
-	// circle collision
-	// dx := (r.X + (r.Width / 2)) - (rect.X + (rect.Width / 2))
-	// dy := (r.Y + (r.Width / 2)) - (rect.Y + (rect.Width / 2))
-
-	// dist := math.Sqrt((dx * dx) + (dy * dy))
-	// return dist < r.Width+rect.Width
-
-	// rect collision
-	// return r.X < (rect.X+rect.Width) &&
-	// 	(r.X+r.Width) > rect.X &&
-	// 	r.Y < (rect.Y+rect.Height) &&
-	// 	(r.Height+r.Y) > rect.Y
 }
 
 func (r *Rect) UpdateXY(x, y, screenHeight, screenWidth float32) {
@@ -108,16 +96,37 @@ func (r *Rect) SlowDown() {
 	if r.Speed.Y > 0 {
 		r.Speed.Y -= frictionForce
 	}
-
 }
 
-// func (r *Rect) ReflectFrom(rect Rect) {
-// 	//tmp := r.Speed
-// 	r.Speed = *r.Speed.Reflect(&rect.Speed)
+func (v *Rect) Heading() float64 {
+	val := math.Atan2(float64(v.Speed.Y), float64(v.Speed.X))
+	return val
+}
 
-// 	r.Speed.X *= 2
-// 	r.Speed.Y *= 2
-// }
+func (v *Rect) SpeedMag() float64 {
+	return math.Sqrt(float64(v.Speed.X*v.Speed.X) + float64(v.Speed.Y*v.Speed.Y))
+}
+
+func (v *Rect) ReflectFrom(other Rect) {
+	other.Speed.X = -(v.Speed.X * 2)
+	other.Speed.Y = -(v.Speed.Y * 2)
+
+	var phi = math.Atan(float64((v.Vector.Y-other.Vector.Y)/v.Vector.X - other.Vector.X))
+
+	var theta1 = v.Heading()
+	var theta2 = other.Heading()
+
+	newSpeedX := (v.SpeedMag()*math.Cos(theta1-phi)+2*2*other.SpeedMag()*math.Cos(theta2-phi))/(2)*math.Cos(phi) + v.SpeedMag()*math.Sin(theta1-phi)*math.Sin(phi)
+	newSpeedY := (v.SpeedMag()*math.Cos(theta1-phi)+2*2*other.SpeedMag()*math.Cos(theta2-phi))/(2)*math.Sin(phi) + v.SpeedMag()*math.Sin(theta1-phi)*math.Cos(phi)
+
+	v.Speed.X = float32(newSpeedX)
+	v.Speed.Y = float32(newSpeedY)
+
+	for v.HasCollisionWith(other) {
+		v.Vector.X += float32(newSpeedX)
+		v.Vector.Y += float32(newSpeedY)
+	}
+}
 
 func (r *Rect) ReflectFromScreen(screenHeight, screenWidth float32) bool {
 	if r.Vector.Y+r.Height >= screenHeight {

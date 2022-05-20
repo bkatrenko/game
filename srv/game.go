@@ -1,9 +1,9 @@
 package main
 
 const (
-	BallDiameter = 25
-	PlaneWidth   = 35
-	PlaneHeight  = 35
+	BallDiameter = 20
+	PlaneWidth   = 25
+	PlaneHeight  = 25
 
 	GoalWidth  = 30
 	GoalHeight = 90
