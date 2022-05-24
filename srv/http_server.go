@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 
 	"net/http"
 	"time"
@@ -11,48 +10,57 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-// server wraps all the UDP echo server functionality.
-// ps.: the server is capable of answering to a single
-// client at a time.
-func (s *server) runHTTPServer(ctx context.Context) error {
+const (
+	DefaultIdleTimeout       = time.Second * 60
+	DefaultReadTimeout       = time.Second * 2
+	DefaultWriteTimeout      = time.Second * 2
+	DefaultReadHeaderTimeout = time.Second
+
+	DefaultMaxHeaderBytes = 1024
+)
+
+type httpServer struct {
+	proc   *processor
+	server *http.Server
+}
+
+func newHTTPServer(config config, proc *processor) *httpServer {
+	return &httpServer{
+		proc: proc,
+		server: &http.Server{
+			Addr:              config.listenAddressHTTP,
+			ReadTimeout:       DefaultReadTimeout,
+			ReadHeaderTimeout: DefaultReadHeaderTimeout,
+			WriteTimeout:      DefaultWriteTimeout,
+			IdleTimeout:       DefaultIdleTimeout,
+			MaxHeaderBytes:    DefaultMaxHeaderBytes,
+		},
+	}
+}
+
+func (s *httpServer) run(ctx context.Context) error {
+	s.server.Handler = s.router()
+	return s.server.ListenAndServe()
+}
+
+func (s *httpServer) router() http.Handler {
 	r := chi.NewRouter()
 
+	// Set a timeout value on the request context (ctx), that will signal
+	// through ctx.Done() that the request has timed out and further
+	// processing should be stopped.
+	r.Use(middleware.Timeout(30 * time.Second))
 	// A good base middleware stack
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	// Set a timeout value on the request context (ctx), that will signal
-	// through ctx.Done() that the request has timed out and further
-	// processing should be stopped.
-	r.Use(middleware.Timeout(30 * time.Second))
-
-	r.Post("/game/join", func(w http.ResponseWriter, r *http.Request) {
-		var joinMessage JoinGame
-
-		if err := json.NewDecoder(r.Body).Decode(&joinMessage); err != nil {
-			println("error while decode join request:", err.Error())
-			s.writeError(w, "can't decode join request", http.StatusBadRequest)
-			return
-		}
-
-		state, err := s.proc.join(joinMessage)
-		if err != nil {
-			println("error while join game:", err.Error())
-			s.writeError(w, "can't join game", http.StatusInternalServerError)
-			return
-		}
-
-		if err := json.NewEncoder(w).Encode(state); err != nil {
-			println("error while encode join response:", err.Error())
-		}
-	})
-
-	return http.ListenAndServe(s.listenAddressHTTP, r)
+	r.Post("/game/join", s.handleJoin)
+	return r
 }
 
-func (s *server) writeError(w http.ResponseWriter, text string, status int) {
+func (s *httpServer) writeError(w http.ResponseWriter, text string, status int) {
 	w.WriteHeader(status)
 
 	_, err := w.Write([]byte(text))

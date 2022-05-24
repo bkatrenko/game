@@ -1,136 +1,53 @@
 package main
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestState_getSendData(t *testing.T) {
-	type fields struct {
-		ID            string
-		CameFrom      string
-		Player1       Rect
-		Player2       Rect
-		Ball          Rect
-		MessageType   int8
-		Message       string
-		Player1Score  int8
-		Player1Locked bool
-		Player2Score  int8
-		Player2Locked bool
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   State
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &State{
-				ID:            tt.fields.ID,
-				CameFrom:      tt.fields.CameFrom,
-				Player1:       tt.fields.Player1,
-				Player2:       tt.fields.Player2,
-				Ball:          tt.fields.Ball,
-				MessageType:   tt.fields.MessageType,
-				Message:       tt.fields.Message,
-				Player1Score:  tt.fields.Player1Score,
-				Player1Locked: tt.fields.Player1Locked,
-				Player2Score:  tt.fields.Player2Score,
-				Player2Locked: tt.fields.Player2Locked,
-			}
-			if got := s.getSendData(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("State.getSendData() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func FuzzState_getSendData(f *testing.F) {
+	f.Add("testGameID", "player1ID", "player2ID")
+	f.Fuzz(func(t *testing.T, testGameID, player1ID, player2ID string) {
+		state := State{
+			ID: testGameID,
+			Player1: Rect{
+				ID: player1ID,
+			},
+			Player2: Rect{
+				ID: player2ID,
+			},
+			CameFrom: player1ID,
+		}
+
+		sendData := state.getSendData()
+
+		want := State{}
+		want.Player2 = Rect{ID: player2ID}
+		want.CameFrom = player1ID
+
+		assert.Equal(t, want, sendData)
+	})
 }
 
-func TestState_GetCurrentPlayer(t *testing.T) {
-	type fields struct {
-		ID            string
-		CameFrom      string
-		Player1       Rect
-		Player2       Rect
-		Ball          Rect
-		MessageType   int8
-		Message       string
-		Player1Score  int8
-		Player1Locked bool
-		Player2Score  int8
-		Player2Locked bool
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   Rect
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &State{
-				ID:            tt.fields.ID,
-				CameFrom:      tt.fields.CameFrom,
-				Player1:       tt.fields.Player1,
-				Player2:       tt.fields.Player2,
-				Ball:          tt.fields.Ball,
-				MessageType:   tt.fields.MessageType,
-				Message:       tt.fields.Message,
-				Player1Score:  tt.fields.Player1Score,
-				Player1Locked: tt.fields.Player1Locked,
-				Player2Score:  tt.fields.Player2Score,
-				Player2Locked: tt.fields.Player2Locked,
-			}
-			if got := s.GetCurrentPlayer(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("State.GetCurrentPlayer() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+func FuzzState_getCurrentPlayer(f *testing.F) {
+	f.Add("player1ID", "player2ID")
+	f.Fuzz(func(t *testing.T, player1ID, player2ID string) {
+		state := State{
+			Player1: Rect{
+				ID: player1ID,
+			},
+			Player2: Rect{
+				ID: player2ID,
+			},
+			CameFrom: player1ID,
+		}
 
-func TestState_SetCurrentPlayer(t *testing.T) {
-	type fields struct {
-		ID            string
-		CameFrom      string
-		Player1       Rect
-		Player2       Rect
-		Ball          Rect
-		MessageType   int8
-		Message       string
-		Player1Score  int8
-		Player1Locked bool
-		Player2Score  int8
-		Player2Locked bool
-	}
-	type args struct {
-		player Rect
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &State{
-				ID:            tt.fields.ID,
-				CameFrom:      tt.fields.CameFrom,
-				Player1:       tt.fields.Player1,
-				Player2:       tt.fields.Player2,
-				Ball:          tt.fields.Ball,
-				MessageType:   tt.fields.MessageType,
-				Message:       tt.fields.Message,
-				Player1Score:  tt.fields.Player1Score,
-				Player1Locked: tt.fields.Player1Locked,
-				Player2Score:  tt.fields.Player2Score,
-				Player2Locked: tt.fields.Player2Locked,
-			}
-			s.SetCurrentPlayer(tt.args.player)
-		})
-	}
+		currentPlayer := state.GetCurrentPlayer()
+		assert.Equal(t, Rect{ID: player1ID}, currentPlayer)
+
+		state.CameFrom = player2ID
+		currentPlayer = state.GetCurrentPlayer()
+		assert.Equal(t, Rect{ID: player2ID}, currentPlayer)
+	})
 }

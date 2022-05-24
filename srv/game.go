@@ -8,10 +8,7 @@ const (
 	GoalWidth  = 30
 	GoalHeight = 90
 
-	Player1GoalX = 0
 	Player1GoalY = ScreenWidth/2 - GoalHeight*1.4
-
-	Player2GoalX = ScreenWidth - GoalWidth
 	Player2GoalY = ScreenWidth/2 - GoalHeight*1.4
 )
 
@@ -59,15 +56,14 @@ type (
 // - We don't need to send to a client his own location
 // - We don't need to send a Game ID while it is knowing for a client
 func (s *State) getSendData() State {
+	s.ID = ""
+
 	if s.CameFrom == s.Player1.ID {
 		s.Player1 = Rect{}
+		return *s
 	}
 
-	if s.CameFrom == s.Player2.ID {
-		s.Player2 = Rect{}
-	}
-
-	s.ID = ""
+	s.Player2 = Rect{}
 	return *s
 }
 
