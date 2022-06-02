@@ -6,30 +6,38 @@ import (
 	"time"
 )
 
-type processor struct {
-	games sync.Map
-}
+type (
+	Processor interface {
+		StartGameEngine()
+		HandleIncomingWorldState(upcomingState State) (State, error)
+		Join(joinRequest JoinGame) (State, error)
+	}
 
-func newProc() *processor {
-	return &processor{
+	processorImpl struct {
+		games sync.Map
+	}
+)
+
+func newProc() Processor {
+	return &processorImpl{
 		games: sync.Map{},
 	}
 }
 
-func (p *processor) handle(upcomingState State) (State, error) {
-	currentGame, ok := p.getGame(upcomingState.ID)
+func (p *processorImpl) HandleIncomingWorldState(incomingState State) (State, error) {
+	currentGame, ok := p.getGame(incomingState.ID)
 	if !ok {
-		return State{}, fmt.Errorf("can't fine the game with ID: %s", upcomingState.ID)
+		return State{}, fmt.Errorf("can't fine the game with ID: %s", incomingState.ID)
 	}
 
-	currentCame := p.modifyState(currentGame, upcomingState)
+	currentCame := p.modifyState(currentGame, incomingState)
 	p.loadGame(currentCame)
 
-	currentCame.CameFrom = upcomingState.CameFrom
+	currentCame.CameFrom = incomingState.CameFrom
 	return currentCame, nil
 }
 
-func (p *processor) join(joinRequest JoinGame) (State, error) {
+func (p *processorImpl) Join(joinRequest JoinGame) (State, error) {
 	currentGame, ok := p.getGame(joinRequest.GameID)
 	if !ok {
 		currentGame = p.startStateFromJoin(joinRequest)
@@ -52,7 +60,7 @@ func (p *processor) join(joinRequest JoinGame) (State, error) {
 	return currentGame, nil
 }
 
-func (p *processor) startModifier() {
+func (p *processorImpl) StartGameEngine() {
 	ticker := time.NewTicker(time.Millisecond * 20)
 
 	for {
@@ -84,11 +92,10 @@ func (p *processor) startModifier() {
 		currentState = p.checkPlayer2Goal(currentState)
 
 		p.loadGame(currentState)
-
 	}
 }
 
-func (p *processor) modifyState(currentState, upcomingState State) State {
+func (p *processorImpl) modifyState(currentState, upcomingState State) State {
 	if upcomingState.CameFrom == currentState.Player1.ID {
 		currentState.Player1 = upcomingState.Player1
 	}
@@ -111,7 +118,7 @@ func (p *processor) modifyState(currentState, upcomingState State) State {
 	return currentState
 }
 
-func (p *processor) checkPlayer1Goal(state State) State {
+func (p *processorImpl) checkPlayer1Goal(state State) State {
 	if state.Ball.Vector.X <= 0+GoalWidth &&
 		state.Ball.Vector.Y >= Player1GoalY &&
 		state.Ball.Vector.Y+BallDiameter <= Player1GoalY+GoalHeight {
@@ -128,7 +135,7 @@ func (p *processor) checkPlayer1Goal(state State) State {
 	return state
 }
 
-func (p *processor) checkPlayer2Goal(state State) State {
+func (p *processorImpl) checkPlayer2Goal(state State) State {
 	if state.Ball.Vector.X+BallDiameter >= ScreenWidth-GoalWidth &&
 		state.Ball.Vector.Y >= Player2GoalY &&
 		state.Ball.Vector.Y+BallDiameter <= Player2GoalY+GoalHeight {
@@ -145,7 +152,7 @@ func (p *processor) checkPlayer2Goal(state State) State {
 	return state
 }
 
-func (p *processor) getGame(id string) (State, bool) {
+func (p *processorImpl) getGame(id string) (State, bool) {
 	state, ok := p.games.Load(id)
 	if !ok {
 		return State{}, false
@@ -159,11 +166,11 @@ func (p *processor) getGame(id string) (State, bool) {
 	return typedState, true
 }
 
-func (p *processor) loadGame(state State) {
+func (p *processorImpl) loadGame(state State) {
 	p.games.Store(state.ID, state)
 }
 
-func (p *processor) startStateFromJoin(joinRequest JoinGame) State {
+func (p *processorImpl) startStateFromJoin(joinRequest JoinGame) State {
 	state := State{
 		ID: joinRequest.GameID,
 		Player1: Rect{

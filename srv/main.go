@@ -22,7 +22,7 @@ func main() {
 	udpServer := newUDPServer(config, p, newCompressor())
 	httpServer := newHTTPServer(config, p)
 
-	go p.startModifier()
+	go p.StartGameEngine()
 	go udpServer.run(context.Background())
 
 	httpServer.run(context.Background())

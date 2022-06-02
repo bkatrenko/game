@@ -11,20 +11,22 @@ import (
 )
 
 const (
+	gameJoinRoute = "/game/join"
+
 	DefaultIdleTimeout       = time.Second * 60
-	DefaultReadTimeout       = time.Second * 2
-	DefaultWriteTimeout      = time.Second * 2
+	DefaultReadTimeout       = time.Second * 15
+	DefaultWriteTimeout      = time.Second * 15
 	DefaultReadHeaderTimeout = time.Second
 
 	DefaultMaxHeaderBytes = 1024
 )
 
 type httpServer struct {
-	proc   *processor
+	proc   Processor
 	server *http.Server
 }
 
-func newHTTPServer(config config, proc *processor) *httpServer {
+func newHTTPServer(config config, proc Processor) *httpServer {
 	return &httpServer{
 		proc: proc,
 		server: &http.Server{
@@ -56,7 +58,7 @@ func (s *httpServer) router() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/game/join", s.handleJoin)
+	r.Post(gameJoinRoute, s.handleJoin)
 	return r
 }
 

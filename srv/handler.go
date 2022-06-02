@@ -14,7 +14,7 @@ func (s *httpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state, err := s.proc.join(joinMessage)
+	state, err := s.proc.Join(joinMessage)
 	if err != nil {
 		println("error while join game:", err.Error())
 		s.writeError(w, "can't join game", http.StatusInternalServerError)

@@ -10,13 +10,13 @@ import (
 
 type (
 	udpServer struct {
-		processor        *processor
+		processor        Processor
 		compressor       compressor
 		listenAddressUDP string
 	}
 )
 
-func newUDPServer(config config, processor *processor, compressor compressor) udpServer {
+func newUDPServer(config config, processor Processor, compressor compressor) udpServer {
 	return udpServer{
 		processor:        processor,
 		compressor:       compressor,
@@ -54,7 +54,7 @@ func (s *udpServer) run(ctx context.Context) error {
 				state.MessageType = MessageTypeError
 			}
 
-			state, err = s.processor.handle(state)
+			state, err = s.processor.HandleIncomingWorldState(state)
 			if err != nil {
 				fmt.Println("handler error:", err.Error())
 				state.Message = err.Error()
