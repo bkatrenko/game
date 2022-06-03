@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	testing "testing"
 
 	mock "github.com/stretchr/testify/mock"
@@ -12,7 +13,7 @@ type ProcessorMock struct {
 }
 
 // HandleIncomingWorldState provides a mock function with given fields: upcomingState
-func (_m *ProcessorMock) HandleIncomingWorldState(upcomingState State) (State, error) {
+func (_m *ProcessorMock) HandleIncomingWorldState(ctx context.Context, upcomingState State) (State, error) {
 	ret := _m.Called(upcomingState)
 
 	var r0 State
@@ -33,7 +34,7 @@ func (_m *ProcessorMock) HandleIncomingWorldState(upcomingState State) (State, e
 }
 
 // Join provides a mock function with given fields: joinRequest
-func (_m *ProcessorMock) Join(joinRequest JoinGame) (State, error) {
+func (_m *ProcessorMock) Join(ctx context.Context, joinRequest JoinGame) (State, error) {
 	ret := _m.Called(joinRequest)
 
 	var r0 State
@@ -54,7 +55,7 @@ func (_m *ProcessorMock) Join(joinRequest JoinGame) (State, error) {
 }
 
 // StartGameEngine provides a mock function with given fields:
-func (_m *ProcessorMock) StartGameEngine() {
+func (_m *ProcessorMock) StartGameEngine(ctx context.Context) {
 	_m.Called()
 }
 

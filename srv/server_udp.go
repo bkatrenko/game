@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type (
@@ -24,10 +26,10 @@ func newUDPServer(config config, processor Processor, compressor compressor) udp
 	}
 }
 
-func (s *udpServer) run(ctx context.Context) error {
+func (s *udpServer) Run(ctx context.Context) {
 	pc, err := net.ListenPacket("udp", s.listenAddressUDP)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer pc.Close()
 
@@ -39,7 +41,6 @@ func (s *udpServer) run(ctx context.Context) error {
 
 		n, addr, err := pc.ReadFrom(buffer)
 		if err != nil {
-			fmt.Println("error while read from UDP connection:", err.Error())
 			continue
 		}
 
@@ -54,7 +55,7 @@ func (s *udpServer) run(ctx context.Context) error {
 				state.MessageType = MessageTypeError
 			}
 
-			state, err = s.processor.HandleIncomingWorldState(state)
+			state, err = s.processor.HandleIncomingWorldState(context.Background(), state)
 			if err != nil {
 				fmt.Println("handler error:", err.Error())
 				state.Message = err.Error()
@@ -84,8 +85,9 @@ func (s *udpServer) run(ctx context.Context) error {
 
 		select {
 		case <-ctx.Done():
+			log.Info().Msg("stop UDP server: context is done")
 			fmt.Println("context is done:", ctx.Err())
-			return nil
+			return
 		default:
 		}
 	}

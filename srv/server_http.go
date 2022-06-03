@@ -40,9 +40,15 @@ func newHTTPServer(config config, proc Processor) *httpServer {
 	}
 }
 
-func (s *httpServer) run(ctx context.Context) error {
+func (s *httpServer) Run(ctx context.Context) {
 	s.server.Handler = s.router()
-	return s.server.ListenAndServe()
+	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		panic(err)
+	}
+}
+
+func (s *httpServer) Stop(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }
 
 func (s *httpServer) router() http.Handler {

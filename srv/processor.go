@@ -1,16 +1,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 type (
 	Processor interface {
-		StartGameEngine()
-		HandleIncomingWorldState(upcomingState State) (State, error)
-		Join(joinRequest JoinGame) (State, error)
+		StartGameEngine(ctx context.Context)
+		HandleIncomingWorldState(ctx context.Context, upcomingState State) (State, error)
+		Join(ctx context.Context, joinRequest JoinGame) (State, error)
 	}
 
 	processorImpl struct {
@@ -24,7 +27,7 @@ func newProc() Processor {
 	}
 }
 
-func (p *processorImpl) HandleIncomingWorldState(incomingState State) (State, error) {
+func (p *processorImpl) HandleIncomingWorldState(ctx context.Context, incomingState State) (State, error) {
 	currentGame, ok := p.getGame(incomingState.ID)
 	if !ok {
 		return State{}, fmt.Errorf("can't fine the game with ID: %s", incomingState.ID)
@@ -37,7 +40,7 @@ func (p *processorImpl) HandleIncomingWorldState(incomingState State) (State, er
 	return currentCame, nil
 }
 
-func (p *processorImpl) Join(joinRequest JoinGame) (State, error) {
+func (p *processorImpl) Join(ctx context.Context, joinRequest JoinGame) (State, error) {
 	currentGame, ok := p.getGame(joinRequest.GameID)
 	if !ok {
 		currentGame = p.startStateFromJoin(joinRequest)
@@ -54,13 +57,15 @@ func (p *processorImpl) Join(joinRequest JoinGame) (State, error) {
 	p.loadGame(currentGame)
 	currentGame.CameFrom = joinRequest.PlayedID
 
-	println("new game created, game ID:", joinRequest.GameID,
-		"player ID:", joinRequest.PlayedID)
+	log.Info().
+		Str("player_id", joinRequest.PlayedID).
+		Str("game_id", joinRequest.GameID).
+		Msg("new game created")
 
 	return currentGame, nil
 }
 
-func (p *processorImpl) StartGameEngine() {
+func (p *processorImpl) StartGameEngine(ctx context.Context) {
 	ticker := time.NewTicker(time.Millisecond * 20)
 
 	for {
@@ -92,6 +97,12 @@ func (p *processorImpl) StartGameEngine() {
 		currentState = p.checkPlayer2Goal(currentState)
 
 		p.loadGame(currentState)
+		select {
+		case <-ctx.Done():
+			log.Info().Msg("stop game engine: context is done")
+			return
+		default:
+		}
 	}
 }
 

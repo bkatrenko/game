@@ -1,0 +1,26 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hockey-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hockey-server
+  template:
+    metadata:
+      labels:
+        app: hockey-server
+    spec:
+      containers:
+      - name: hockey-server
+        image: hockey-server:0.0.1
+        ports:
+        - containerPort: 80
+      - env:
+        - name: UDP_ADDRESS
+          value: ":8081"
+        - name: HTTP_ADDRESS
+          value: ":8080"
+  
