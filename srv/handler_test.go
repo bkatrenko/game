@@ -7,14 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pioz/faker"
 	"github.com/stretchr/testify/assert"
 	mock "github.com/stretchr/testify/mock"
 )
 
 func Test_httpServer_handleJoin(t *testing.T) {
-	//fakeState := fakeStateGetter()
-
 	type (
 		fields struct {
 			proc   func() Processor
@@ -75,17 +72,6 @@ func Test_httpServer_handleJoin(t *testing.T) {
 			s.handleJoin(tt.args.w, tt.args.r)
 			assert.Equal(t, tt.expectedCode, tt.args.w.Code)
 		})
-	}
-}
-
-func fakeStateGetter() func() State {
-	state := State{}
-	if err := faker.Build(&state); err != nil {
-		panic(err)
-	}
-
-	return func() State {
-		return state
 	}
 }
 

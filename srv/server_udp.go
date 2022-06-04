@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net"
 	"time"
 
@@ -50,14 +49,14 @@ func (s *udpServer) Run(ctx context.Context) {
 		go func() {
 			state, err := s.decode(raw)
 			if err != nil {
-				fmt.Println("error while decode input data:", err.Error())
+				log.Err(err).Msg("error while decode input data")
 				state.Message = err.Error()
 				state.MessageType = MessageTypeError
 			}
 
 			state, err = s.processor.HandleIncomingWorldState(context.Background(), state)
 			if err != nil {
-				fmt.Println("handler error:", err.Error())
+				log.Err(err).Msg("handler error")
 				state.Message = err.Error()
 				state.MessageType = MessageTypeError
 				return
@@ -65,20 +64,20 @@ func (s *udpServer) Run(ctx context.Context) {
 
 			updatedState, err := s.encode(state)
 			if err != nil {
-				fmt.Println("error while encode state:", err.Error())
+				log.Err(err).Msg("error while encode state")
 				state.Message = err.Error()
 				state.MessageType = MessageTypeError
 			}
 
 			err = pc.SetWriteDeadline(time.Now().Add(udpTimeout))
 			if err != nil {
-				fmt.Println("error while set write deadline:", err.Error())
+				log.Err(err).Msg("error while set write deadline")
 				return
 			}
 
 			_, err = pc.WriteTo(updatedState, addr)
 			if err != nil {
-				fmt.Println("error while write state into UDP:", err.Error())
+				log.Err(err).Msg("error while write state into UDP")
 				return
 			}
 		}()
@@ -86,7 +85,6 @@ func (s *udpServer) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			log.Info().Msg("stop UDP server: context is done")
-			fmt.Println("context is done:", ctx.Err())
 			return
 		default:
 		}

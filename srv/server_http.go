@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -73,6 +74,6 @@ func (s *httpServer) writeError(w http.ResponseWriter, text string, status int) 
 
 	_, err := w.Write([]byte(text))
 	if err != nil {
-		println("error while send response:", err.Error())
+		log.Err(err).Msg("error while send response")
 	}
 }

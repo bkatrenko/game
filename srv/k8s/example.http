@@ -1,0 +1,4 @@
+POST http://hockey.local:8076/game/join
+Content-Type: application/json
+
+{}
