@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	gameJoinRoute = "/game/join"
+	RouteGameJoin = "/game/join"
+	RouteHealthz  = "/healthz"
 
 	DefaultIdleTimeout       = time.Second * 60
 	DefaultReadTimeout       = time.Second * 15
@@ -65,7 +66,9 @@ func (s *httpServer) router() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Post(gameJoinRoute, s.handleJoin)
+	r.Post(RouteGameJoin, s.handleJoin)
+	r.Get(RouteHealthz, s.handleHealthz)
+
 	return r
 }
 

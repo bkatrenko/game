@@ -27,3 +27,7 @@ func (s *httpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 		log.Err(err).Msg("error while encode join response")
 	}
 }
+
+func (s *httpServer) handleHealthz(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}

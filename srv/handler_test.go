@@ -40,7 +40,7 @@ func Test_httpServer_handleJoin(t *testing.T) {
 			},
 			args: args{
 				w: httptest.NewRecorder(),
-				r: mustMakeRequest(http.NewRequest(http.MethodPost, gameJoinRoute, bytes.NewBuffer([]byte("test")))),
+				r: mustMakeRequest(http.NewRequest(http.MethodPost, RouteGameJoin, bytes.NewBuffer([]byte("test")))),
 			},
 			expectedCode: http.StatusBadRequest,
 		},
@@ -57,7 +57,7 @@ func Test_httpServer_handleJoin(t *testing.T) {
 			},
 			args: args{
 				w: httptest.NewRecorder(),
-				r: mustMakeRequest(http.NewRequest(http.MethodPost, gameJoinRoute, bytes.NewBuffer([]byte("{}")))),
+				r: mustMakeRequest(http.NewRequest(http.MethodPost, RouteGameJoin, bytes.NewBuffer([]byte("{}")))),
 			},
 			expectedCode: http.StatusInternalServerError,
 		},
