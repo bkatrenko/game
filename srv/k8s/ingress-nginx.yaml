@@ -325,8 +325,9 @@ spec:
   ports:
   - appProtocol: http
     name: http
-    port: 8076
+    port: 80
     protocol: TCP
+    nodePort: 30080
     targetPort: http
   - appProtocol: https
     name: https
@@ -337,7 +338,33 @@ spec:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/name: ingress-nginx
-  type: LoadBalancer
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/version: 1.2.0
+  name: ingress-nginx-controller-udp
+  namespace: ingress-nginx
+spec:
+  externalTrafficPolicy: Local
+  ports:
+  - appProtocol: UDP
+    name: udp
+    port: 8087
+    protocol: UDP
+    nodePort: 30087
+    targetPort: 8087
+  selector:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+  type: NodePort
 ---
 apiVersion: v1
 kind: Service
@@ -399,6 +426,7 @@ spec:
         - --validating-webhook=:8443
         - --validating-webhook-certificate=/usr/local/certificates/cert
         - --validating-webhook-key=/usr/local/certificates/key
+        - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
         env:
         - name: POD_NAME
           valueFrom:
@@ -438,6 +466,9 @@ spec:
         - containerPort: 8443
           name: webhook
           protocol: TCP
+        - containerPort: 8087
+          name: udp
+          protocol: UDP
         readinessProbe:
           failureThreshold: 3
           httpGet:
@@ -615,3 +646,11 @@ webhooks:
     resources:
     - ingresses
   sideEffects: None
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: udp-services
+  namespace: ingress-nginx
+data:
+  8087: "hockey/svc-hockey-server:8081"
