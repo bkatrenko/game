@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name:  hockey-server
-          image: hockey-server:0.0.4
+          image: hockey-server:0.0.5
           ports:
             - name: http
               containerPort: 8080

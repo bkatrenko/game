@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httplog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -55,6 +56,9 @@ func (s *httpServer) Stop(ctx context.Context) error {
 
 func (s *httpServer) router() http.Handler {
 	r := chi.NewRouter()
+	logger := httplog.NewLogger("jsonLogger", httplog.Options{
+		JSON: true,
+	})
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
@@ -63,7 +67,7 @@ func (s *httpServer) router() http.Handler {
 	// A good base middleware stack
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
+	r.Use(httplog.RequestLogger(logger))
 	r.Use(middleware.Recoverer)
 
 	r.Post(RouteGameJoin, s.handleJoin)
