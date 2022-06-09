@@ -42,7 +42,7 @@ func main() {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	go p.StartGameEngine(ctx)
+	//go p.StartGameEngine(ctx)
 	go udpServer.Run(ctx)
 	go httpServer.Run(context.Background())
 

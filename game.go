@@ -87,14 +87,14 @@ func (g *Game) run() {
 				continue
 			}
 
-			remoutState, err := g.UDPClient.Send(context.Background(), currentState)
+			remoteState, err := g.UDPClient.Send(context.Background(), currentState)
 			if err != nil {
 				println("error while send state", err.Error())
 				continue
 			}
 
 			var state model.State
-			if err := json.Unmarshal(remoutState, &state); err != nil {
+			if err := json.Unmarshal(remoteState, &state); err != nil {
 				println("error while marshal state", err.Error())
 				continue
 			}

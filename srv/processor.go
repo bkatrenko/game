@@ -4,14 +4,10 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
-
-	"github.com/rs/zerolog/log"
 )
 
 type (
 	Processor interface {
-		StartGameEngine(ctx context.Context)
 		HandleIncomingWorldState(ctx context.Context, upcomingState State) (State, error)
 		Join(ctx context.Context, joinRequest JoinGame) (State, error)
 	}
@@ -28,199 +24,44 @@ func newProc() Processor {
 }
 
 func (p *processorImpl) HandleIncomingWorldState(ctx context.Context, incomingState State) (State, error) {
-	currentGame, ok := p.getGame(incomingState.ID)
+	updatesChan, ok := p.getGame(incomingState.ID)
 	if !ok {
 		return State{}, fmt.Errorf("can't fine the game with ID: %s", incomingState.ID)
 	}
 
-	currentCame := p.modifyState(currentGame, incomingState)
-	p.loadGame(currentCame)
-
-	currentCame.CameFrom = incomingState.CameFrom
-	return currentCame, nil
-}
-
-func (p *processorImpl) Join(ctx context.Context, joinRequest JoinGame) (State, error) {
-	currentGame, ok := p.getGame(joinRequest.GameID)
-	if !ok {
-		currentGame = p.startStateFromJoin(joinRequest)
+	responseChan := make(chan State)
+	updatesChan <- GameInstanceUpdate{
+		state:        incomingState,
+		responseChan: responseChan,
 	}
-
-	if joinRequest.PlayerNumber == 0 {
-		currentGame.Player1.ID = joinRequest.PlayedID
-	}
-
-	if joinRequest.PlayerNumber == 1 {
-		currentGame.Player2.ID = joinRequest.PlayedID
-	}
-
-	p.loadGame(currentGame)
-	currentGame.CameFrom = joinRequest.PlayedID
-
-	log.Info().
-		Str("player_id", joinRequest.PlayedID).
-		Str("game_id", joinRequest.GameID).
-		Msg("new game created")
+	currentGame := <-responseChan
+	currentGame.CameFrom = incomingState.CameFrom
 
 	return currentGame, nil
 }
 
-func (p *processorImpl) StartGameEngine(ctx context.Context) {
-	ticker := time.NewTicker(time.Millisecond * 20)
+func (p *processorImpl) Join(ctx context.Context, joinRequest JoinGame) (State, error) {
+	gameInstance := NewGameInstance(joinRequest)
+	gameInstance.Start(context.Background())
 
-	for {
-		<-ticker.C
-
-		currentState, ok := p.getGame("1")
-		if !ok {
-			continue
-		}
-
-		currentState.Ball.RestrictSpeedLimit()
-		currentState.Ball.SlowDown()
-		currentState.Ball.UpdateXY(currentState.Ball.Speed.X, currentState.Ball.Speed.Y, ScreenHeight, ScreenWidth)
-
-		if currentState.Ball.HasCollisionWith(currentState.Player1) {
-			currentState.Ball.ReflectFrom(currentState.Player1)
-			currentState.Ball.Vector.X += currentState.Ball.Speed.X / 2
-			currentState.Ball.Vector.Y += currentState.Ball.Speed.Y / 2
-
-		}
-
-		if currentState.Ball.HasCollisionWith(currentState.Player2) {
-			currentState.Ball.ReflectFrom(currentState.Player2)
-			currentState.Ball.Vector.X += currentState.Ball.Speed.X
-			currentState.Ball.Vector.Y += currentState.Ball.Speed.Y
-		}
-
-		currentState = p.checkPlayer1Goal(currentState)
-		currentState = p.checkPlayer2Goal(currentState)
-
-		p.loadGame(currentState)
-		select {
-		case <-ctx.Done():
-			log.Info().Msg("stop game engine: context is done")
-			return
-		default:
-		}
-	}
+	p.loadGame(joinRequest.GameID, gameInstance.getUpdateChan())
+	return gameInstance.getState(), nil
 }
 
-func (p *processorImpl) modifyState(currentState, upcomingState State) State {
-	if upcomingState.CameFrom == currentState.Player1.ID {
-		currentState.Player1 = upcomingState.Player1
-	}
-
-	if upcomingState.CameFrom == currentState.Player2.ID {
-		currentState.Player2 = upcomingState.Player2
-	}
-
-	if currentState.Player1.HasCollisionWith(currentState.Ball) {
-		currentState.Ball.AddSpeed(currentState.Player1.Speed.X, currentState.Player1.Speed.Y)
-	}
-
-	if currentState.Player2.HasCollisionWith(currentState.Ball) {
-		currentState.Ball.AddSpeed(currentState.Player2.Speed.X, currentState.Player2.Speed.Y)
-	}
-
-	currentState = p.checkPlayer1Goal(currentState)
-	currentState = p.checkPlayer2Goal(currentState)
-
-	return currentState
-}
-
-func (p *processorImpl) checkPlayer1Goal(state State) State {
-	if state.Ball.Vector.X <= 0+GoalWidth &&
-		state.Ball.Vector.Y >= Player1GoalY &&
-		state.Ball.Vector.Y+BallDiameter <= Player1GoalY+GoalHeight {
-
-		if !state.Player1Locked {
-			state.Player2Score++
-			state.Player1Locked = true
-		}
-
-		return state
-	}
-
-	state.Player1Locked = false
-	return state
-}
-
-func (p *processorImpl) checkPlayer2Goal(state State) State {
-	if state.Ball.Vector.X+BallDiameter >= ScreenWidth-GoalWidth &&
-		state.Ball.Vector.Y >= Player2GoalY &&
-		state.Ball.Vector.Y+BallDiameter <= Player2GoalY+GoalHeight {
-
-		if !state.Player2Locked {
-			state.Player1Score++
-			state.Player2Locked = true
-		}
-
-		return state
-	}
-
-	state.Player2Locked = false
-	return state
-}
-
-func (p *processorImpl) getGame(id string) (State, bool) {
-	state, ok := p.games.Load(id)
+func (p *processorImpl) getGame(id string) (chan GameInstanceUpdate, bool) {
+	updatesChan, ok := p.games.Load(id)
 	if !ok {
-		return State{}, false
+		return nil, false
 	}
 
-	typedState, ok := state.(State)
+	typedUpdatesChan, ok := updatesChan.(chan GameInstanceUpdate)
 	if !ok {
-		return State{}, false
+		return nil, false
 	}
 
-	return typedState, true
+	return typedUpdatesChan, true
 }
 
-func (p *processorImpl) loadGame(state State) {
-	p.games.Store(state.ID, state)
-}
-
-func (p *processorImpl) startStateFromJoin(joinRequest JoinGame) State {
-	state := State{
-		ID: joinRequest.GameID,
-		Player1: Rect{
-			Width:  PlaneHeight,
-			Height: PlaneHeight,
-			Vector: NewVector(50.0, ScreenHeight/2),
-
-			PrevX:      0.0,
-			PrevY:      0.0,
-			SpeedLimit: 6.0,
-			Speed:      NewVector(0, 0),
-		},
-		Player2: Rect{
-			Width:      PlaneHeight,
-			Height:     PlaneHeight,
-			Vector:     NewVector(ScreenWidth-PlaneWidth, ScreenHeight/2),
-			PrevX:      0.0,
-			PrevY:      0.0,
-			SpeedLimit: 6.0,
-			Speed:      NewVector(0, 0),
-		},
-		Ball: Rect{
-			Width:  BallDiameter,
-			Height: BallDiameter,
-			Vector: NewVector(200, 200),
-
-			PrevX:      0.0,
-			PrevY:      0.0,
-			SpeedLimit: 6.0,
-			Speed:      NewVector(0, 0),
-		},
-	}
-
-	if joinRequest.PlayerNumber == 0 {
-		state.Player1.ID = joinRequest.PlayedID
-	}
-	if joinRequest.PlayerNumber == 1 {
-		state.Player2.ID = joinRequest.PlayedID
-	}
-
-	return state
+func (p *processorImpl) loadGame(id string, updatesChan chan GameInstanceUpdate) {
+	p.games.Store(id, updatesChan)
 }
