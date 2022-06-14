@@ -41,6 +41,20 @@ func (p *processorImpl) HandleIncomingWorldState(ctx context.Context, incomingSt
 }
 
 func (p *processorImpl) Join(ctx context.Context, joinRequest JoinGame) (State, error) {
+	updatesChan, ok := p.getGame(joinRequest.GameID)
+	if ok {
+		responseChan := make(chan State)
+		updatesChan <- GameInstanceUpdate{
+			newPlayer:    joinRequest,
+			state:        State{},
+			responseChan: responseChan,
+		}
+		currentGame := <-responseChan
+		currentGame.CameFrom = joinRequest.PlayedID
+
+		return currentGame, nil
+	}
+
 	gameInstance := NewGameInstance(joinRequest)
 	gameInstance.Start(context.Background())
 

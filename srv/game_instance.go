@@ -9,6 +9,9 @@ import (
 
 const (
 	GameUpdatePeriod = time.Millisecond * 40
+
+	Player1Number = iota - 1
+	Player2Number
 )
 
 type (
@@ -19,6 +22,7 @@ type (
 	}
 
 	GameInstanceUpdate struct {
+		newPlayer    JoinGame
 		state        State
 		responseChan chan State
 	}
@@ -77,11 +81,8 @@ func (gi *GameInstance) Start(ctx context.Context) {
 	go func() {
 		for {
 			select {
-			case newRequest := <-gi.updatesChan:
-				gi.state = gi.modifyState(gi.state, newRequest.state)
-				gi.state.CameFrom = newRequest.state.CameFrom
-				newRequest.responseChan <- gi.state
-
+			case update := <-gi.updatesChan:
+				gi.handleUpdate(update)
 			case <-gi.ticker.C:
 			case <-ctx.Done():
 				log.Debug().Str("game_id", gi.state.ID).Msg("stop game instance: context is done")
@@ -109,6 +110,22 @@ func (gi *GameInstance) Start(ctx context.Context) {
 			gi.state = gi.checkPlayer2Goal(gi.state)
 		}
 	}()
+}
+
+func (gi *GameInstance) handleUpdate(update GameInstanceUpdate) {
+	switch {
+	case update.newPlayer.GameID != "":
+		gi.state = gi.addPlayer(gi.state, update.newPlayer)
+		gi.state.CameFrom = update.newPlayer.PlayedID
+		update.responseChan <- gi.state
+		return
+	case update.state.ID != "":
+		gi.state = gi.modifyState(gi.state, update.state)
+		gi.state.CameFrom = update.state.CameFrom
+		update.responseChan <- gi.state
+	default:
+		panic("can't handle the update: event seems to be empty")
+	}
 }
 
 func (gi *GameInstance) getState() State {
@@ -174,4 +191,17 @@ func (gi *GameInstance) modifyState(currentState, upcomingState State) State {
 	currentState = gi.checkPlayer2Goal(currentState)
 
 	return currentState
+}
+
+func (gi *GameInstance) addPlayer(currentState State, joinRequest JoinGame) State {
+	switch joinRequest.PlayerNumber {
+	case Player1Number:
+		currentState.Player1.ID = joinRequest.PlayedID
+		return currentState
+	case Player2Number:
+		currentState.Player2.ID = joinRequest.PlayedID
+		return currentState
+	default:
+		panic("wrong join request number: should be 0 or 1, only two players allowed")
+	}
 }

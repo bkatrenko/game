@@ -130,28 +130,28 @@ func (r *Rect) SlowDown() {
 }
 
 func (r *Rect) ReflectFromScreen(screenHeight, screenWidth float32) bool {
-	if r.Vector.Y+BallDiameter >= screenHeight {
+	if r.Vector.Y+BallRadius >= screenHeight {
 		r.Speed.Y = -r.Speed.Y
 		r.Vector.Y += r.Speed.Y
 
 		return true
 	}
 
-	if r.Vector.X+BallDiameter >= screenWidth {
+	if r.Vector.X+BallRadius >= screenWidth {
 		r.Speed.X = -r.Speed.X
 		r.Vector.X += r.Speed.X
 
 		return true
 	}
 
-	if r.Vector.Y-BallDiameter <= 0 {
+	if r.Vector.Y-BallRadius <= 0 {
 		r.Speed.Y = -r.Speed.Y
 		r.Vector.Y += r.Speed.Y
 
 		return true
 	}
 
-	if r.Vector.X-BallDiameter <= 0 {
+	if r.Vector.X-BallRadius <= 0 {
 		r.Speed.X = -r.Speed.X
 		r.Vector.X += r.Speed.X
 

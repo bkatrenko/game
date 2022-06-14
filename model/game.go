@@ -2,6 +2,7 @@ package model
 
 const (
 	BallDiameter  = 20
+	BallRadius    = 25
 	PlaneDiameter = 25
 
 	GoalWidth  = 30
@@ -44,7 +45,8 @@ func (s *State) SendPlayerPos() State {
 	currentPlayer := s.GetCurrentPlayer()
 	newState := State{
 		ID:       s.ID,
-		CameFrom: s.CameFrom}
+		CameFrom: s.CameFrom,
+	}
 
 	if currentPlayer.ID == s.Player1.ID {
 		newState.Player1 = s.Player1
