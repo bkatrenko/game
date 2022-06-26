@@ -26,6 +26,7 @@ type (
 		PrevY      float32 `json:"py"`
 		Speed      Vector  `json:"s"`
 		SpeedLimit float32 `json:"sl"`
+		Locked     bool
 	}
 
 	Vector struct {
@@ -45,7 +46,12 @@ func NewVector(x, y float32) Vector {
 }
 
 func (r *Rect) HasCollisionWith(rect Rect) bool {
-	return float32(r.Vector.Distance(rect.Vector)) < r.Width*2
+	hasColliion := float32(r.Vector.Distance(rect.Vector)) < r.Width*2
+	if !hasColliion {
+		r.Locked = false
+	}
+
+	return hasColliion
 }
 
 func (r *Rect) UpdateXY(x, y, screenHeight, screenWidth float32) {
@@ -99,34 +105,27 @@ func (r *Rect) SlowDown() {
 	}
 }
 
+func (v *Rect) ReflectFrom(other Rect) {
+	// var phi = math.Atan(float64((v.Vector.Y-other.Vector.Y)/v.Vector.X - other.Vector.X))
+	// var theta1 = v.Heading()
+	// var theta2 = other.Heading()
+	// newSpeedX := (v.SpeedMag()*math.Cos(theta1-phi)*0+2+other.SpeedMag()*math.Cos(theta2-phi))/4*math.Cos(phi) + v.SpeedMag()*math.Sin(theta1-phi)*math.Sin(phi)
+	// newSpeedY := (v.SpeedMag()*math.Cos(theta1-phi)*0+2+other.SpeedMag()*math.Cos(theta2-phi))/4*math.Sin(phi) + v.SpeedMag()*math.Sin(theta1-phi)*math.Cos(phi)
+	// v.Speed.X = float32(newSpeedX)
+	// v.Speed.Y = float32(newSpeedY)
+
+	v.Locked = true
+	v.Speed.X = -v.Speed.X
+	v.Speed.Y = -v.Speed.Y
+}
+
 func (v *Rect) Heading() float64 {
-	val := math.Atan2(float64(v.Speed.Y), float64(v.Speed.X))
+	val := math.Atan2(float64(v.Vector.Y), float64(v.Vector.X))
 	return val
 }
 
 func (v *Rect) SpeedMag() float64 {
-	return math.Sqrt(float64(v.Speed.X*v.Speed.X) + float64(v.Speed.Y*v.Speed.Y))
-}
-
-func (v *Rect) ReflectFrom(other Rect) {
-	other.Speed.X = -(v.Speed.X * 2)
-	other.Speed.Y = -(v.Speed.Y * 2)
-
-	var phi = math.Atan(float64((v.Vector.Y-other.Vector.Y)/v.Vector.X - other.Vector.X))
-
-	var theta1 = v.Heading()
-	var theta2 = other.Heading()
-
-	newSpeedX := (v.SpeedMag()*math.Cos(theta1-phi)+2*2*other.SpeedMag()*math.Cos(theta2-phi))/(2)*math.Cos(phi) + v.SpeedMag()*math.Sin(theta1-phi)*math.Sin(phi)
-	newSpeedY := (v.SpeedMag()*math.Cos(theta1-phi)+2*2*other.SpeedMag()*math.Cos(theta2-phi))/(2)*math.Sin(phi) + v.SpeedMag()*math.Sin(theta1-phi)*math.Cos(phi)
-
-	v.Speed.X = float32(newSpeedX)
-	v.Speed.Y = float32(newSpeedY)
-
-	for v.HasCollisionWith(other) {
-		v.Vector.X += float32(newSpeedX)
-		v.Vector.Y += float32(newSpeedY)
-	}
+	return math.Sqrt(float64(v.Speed.X+v.Speed.Y) * float64(v.Speed.X+v.Speed.Y))
 }
 
 func (r *Rect) ReflectFromScreen(screenHeight, screenWidth float32) bool {
@@ -144,14 +143,14 @@ func (r *Rect) ReflectFromScreen(screenHeight, screenWidth float32) bool {
 		return true
 	}
 
-	if r.Vector.Y <= 0 {
+	if r.Vector.Y-r.Height <= 0 {
 		r.Speed.Y = -r.Speed.Y
 		r.Vector.Y += r.Speed.Y
 
 		return true
 	}
 
-	if r.Vector.X <= 0 {
+	if r.Vector.X-r.Width <= 0 {
 		r.Speed.X = -r.Speed.X
 		r.Vector.X += r.Speed.X
 

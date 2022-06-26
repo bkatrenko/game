@@ -77,6 +77,13 @@ func NewGameInstance(joinRequest JoinGame) *GameInstance {
 	}
 }
 
+func normalize(min, max float32) func(float32) float32 {
+	var delta = max - min
+	return func(val float32) float32 {
+		return (val - min) / delta
+	}
+}
+
 func (gi *GameInstance) Start(ctx context.Context) {
 	go func() {
 		for {
@@ -91,12 +98,13 @@ func (gi *GameInstance) Start(ctx context.Context) {
 
 			gi.state.Ball.RestrictSpeedLimit()
 			gi.state.Ball.SlowDown()
-			gi.state.Ball.UpdateXY(gi.state.Ball.Speed.X, gi.state.Ball.Speed.Y, ScreenHeight, ScreenWidth)
+
+			gi.state.Ball.UpdateXY(normalize(0, 1)(gi.state.Ball.Speed.X), normalize(0, 1)(gi.state.Ball.Speed.Y), ScreenHeight, ScreenWidth)
 
 			if gi.state.Ball.HasCollisionWith(gi.state.Player1) {
 				gi.state.Ball.ReflectFrom(gi.state.Player1)
-				gi.state.Ball.Vector.X += gi.state.Ball.Speed.X / 2
-				gi.state.Ball.Vector.Y += gi.state.Ball.Speed.Y / 2
+				gi.state.Ball.Vector.X += gi.state.Ball.Speed.X
+				gi.state.Ball.Vector.Y += gi.state.Ball.Speed.Y
 
 			}
 
