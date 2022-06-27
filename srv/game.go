@@ -1,5 +1,7 @@
 package main
 
+import "errors"
+
 const (
 	BallDiameter = 20
 	PlaneWidth   = 25
@@ -84,4 +86,20 @@ func (s *State) SetCurrentPlayer(player Rect) {
 	}
 
 	s.Player2 = player
+}
+
+func (j JoinGame) validate() error {
+	if j.GameID == "" {
+		return errors.New("game ID is empty")
+	}
+
+	if j.PlayedID == "" {
+		return errors.New("player ID is empty")
+	}
+
+	if j.PlayerNumber != Player1Number && j.PlayerNumber != Player2Number {
+		return errors.New("wrong player number: 0 or 1 are expected")
+	}
+
+	return nil
 }

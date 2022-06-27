@@ -12,7 +12,7 @@ import (
 
 const (
 	//	serverUpdateAfter = time.Millisecond * 10
-	serverUpdateAfter = time.Millisecond * 20
+	serverUpdateAfter = time.Millisecond * 50
 
 	scoresDPI      = 72
 	scoresTextSize = 26

@@ -1,16 +1,20 @@
+# we deploy current applications into a "hockey" namespace to have more control and visibility around
 apiVersion: v1
-kind: Namespace
+kind: Namespace # https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 metadata:
   labels:
-  name: hockey
+  name: hockey  # As a best practice, namespace' name should describe its main purpose:
+                # in this case it should be a namespace on the local machine, where
+                # developers could debug and play with the application in the environment
+                # that looks exactly like a local copy of what we have in production
 ---
 apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: hockey-server
+kind: Deployment  # https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+metadata:         # Deployment describe which exactly application and in which way will be deployed
+  name: hockey-server # on our newly created k8s cluster
   namespace: hockey
 spec:
-  replicas: 1
+  replicas: 1     # Currently we use only one replica while we don't need more
   selector:
     matchLabels:
       app:  hockey-server
@@ -39,7 +43,7 @@ spec:
               cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 300m
+              cpu: 200m
               memory: 512Mi
           livenessProbe:
             httpGet:

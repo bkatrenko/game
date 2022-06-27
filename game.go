@@ -56,7 +56,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 func (g *Game) Update() error {
 	dx, dy := ebiten.Wheel()
-
 	g.mu.Lock()
 
 	player := g.state.GetCurrentPlayer()
@@ -67,11 +66,53 @@ func (g *Game) Update() error {
 
 	g.mu.Unlock()
 
+	g.sendUpdate()
 	return nil
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return model.ScreenWidth, model.ScreenHeight
+}
+
+func (g *Game) sendUpdate() {
+	currentState, err := json.Marshal(g.state.SendPlayerPos())
+	if err != nil {
+		println("error while marshal state", err.Error())
+		return
+	}
+
+	remoteState, err := g.UDPClient.Send(context.Background(), currentState)
+	if err != nil {
+		println("error while send state", err.Error())
+		return
+	}
+
+	var state model.State
+	if err := json.Unmarshal(remoteState, &state); err != nil {
+		println("error while marshal state", err.Error())
+		return
+	}
+
+	if state.MessageType == model.MessageTypeError {
+		println("error from server received:", state.Message)
+		return
+	}
+
+	g.mu.Lock()
+	if g.state.Player1.ID != state.CameFrom {
+		g.state.Player1 = state.Player1
+	}
+
+	if g.state.Player2.ID != state.CameFrom {
+		g.state.Player2 = state.Player2
+	}
+
+	g.state.Ball = state.Ball
+
+	g.state.Player1Score = state.Player1Score
+	g.state.Player2Score = state.Player2Score
+
+	g.mu.Unlock()
 }
 
 func (g *Game) run() {
@@ -80,45 +121,7 @@ func (g *Game) run() {
 	go func() {
 		for {
 			<-ticker.C
-
-			currentState, err := json.Marshal(g.state.SendPlayerPos())
-			if err != nil {
-				println("error while marshal state", err.Error())
-				continue
-			}
-
-			remoteState, err := g.UDPClient.Send(context.Background(), currentState)
-			if err != nil {
-				println("error while send state", err.Error())
-				continue
-			}
-
-			var state model.State
-			if err := json.Unmarshal(remoteState, &state); err != nil {
-				println("error while marshal state", err.Error())
-				continue
-			}
-
-			if state.MessageType == model.MessageTypeError {
-				println("error from server received:", state.Message)
-				continue
-			}
-
-			g.mu.Lock()
-			if g.state.Player1.ID != state.CameFrom {
-				g.state.Player1 = state.Player1
-			}
-
-			if g.state.Player2.ID != state.CameFrom {
-				g.state.Player2 = state.Player2
-			}
-
-			g.state.Ball = state.Ball
-
-			g.state.Player1Score = state.Player1Score
-			g.state.Player2Score = state.Player2Score
-
-			g.mu.Unlock()
+			g.sendUpdate()
 		}
 	}()
 }

@@ -55,7 +55,11 @@ func (p *processorImpl) Join(ctx context.Context, joinRequest JoinGame) (State, 
 		return currentGame, nil
 	}
 
-	gameInstance := NewGameInstance(joinRequest)
+	gameInstance, err := NewGameInstance(joinRequest)
+	if err != nil {
+		return State{}, err
+	}
+
 	gameInstance.Start(context.Background())
 
 	p.loadGame(joinRequest.GameID, gameInstance.getUpdateChan())

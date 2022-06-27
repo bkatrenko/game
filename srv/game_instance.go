@@ -28,39 +28,12 @@ type (
 	}
 )
 
-func NewGameInstance(joinRequest JoinGame) *GameInstance {
-	state := State{
-		ID: joinRequest.GameID,
-		Player1: Rect{
-			Width:  PlaneHeight,
-			Height: PlaneHeight,
-			Vector: NewVector(50.0, ScreenHeight/2),
-
-			PrevX:      0.0,
-			PrevY:      0.0,
-			SpeedLimit: 6.0,
-			Speed:      NewVector(0, 0),
-		},
-		Player2: Rect{
-			Width:      PlaneHeight,
-			Height:     PlaneHeight,
-			Vector:     NewVector(ScreenWidth-PlaneWidth, ScreenHeight/2),
-			PrevX:      0.0,
-			PrevY:      0.0,
-			SpeedLimit: 6.0,
-			Speed:      NewVector(0, 0),
-		},
-		Ball: Rect{
-			Width:  BallDiameter,
-			Height: BallDiameter,
-			Vector: NewVector(200, 200),
-
-			PrevX:      0.0,
-			PrevY:      0.0,
-			SpeedLimit: 6.0,
-			Speed:      NewVector(0, 0),
-		},
+func NewGameInstance(joinRequest JoinGame) (*GameInstance, error) {
+	if err := joinRequest.validate(); err != nil {
+		return nil, err
 	}
+
+	state := getDefaultState(joinRequest)
 
 	if joinRequest.PlayerNumber == 0 {
 		state.Player1.ID = joinRequest.PlayedID
@@ -74,14 +47,7 @@ func NewGameInstance(joinRequest JoinGame) *GameInstance {
 		state:       state,
 		updatesChan: make(chan GameInstanceUpdate),
 		ticker:      time.NewTicker(GameUpdatePeriod),
-	}
-}
-
-func normalize(min, max float32) func(float32) float32 {
-	var delta = max - min
-	return func(val float32) float32 {
-		return (val - min) / delta
-	}
+	}, nil
 }
 
 func (gi *GameInstance) Start(ctx context.Context) {
@@ -99,7 +65,7 @@ func (gi *GameInstance) Start(ctx context.Context) {
 			gi.state.Ball.RestrictSpeedLimit()
 			gi.state.Ball.SlowDown()
 
-			gi.state.Ball.UpdateXY(normalize(0, 1)(gi.state.Ball.Speed.X), normalize(0, 1)(gi.state.Ball.Speed.Y), ScreenHeight, ScreenWidth)
+			gi.state.Ball.UpdateXY(gi.state.Ball.Speed.X, gi.state.Ball.Speed.Y, ScreenHeight, ScreenWidth)
 
 			if gi.state.Ball.HasCollisionWith(gi.state.Player1) {
 				gi.state.Ball.ReflectFrom(gi.state.Player1)
@@ -211,5 +177,40 @@ func (gi *GameInstance) addPlayer(currentState State, joinRequest JoinGame) Stat
 		return currentState
 	default:
 		panic("wrong join request number: should be 0 or 1, only two players allowed")
+	}
+}
+
+func getDefaultState(joinRequest JoinGame) State {
+	return State{
+		ID: joinRequest.GameID,
+		Player1: Rect{
+			Width:  PlaneHeight,
+			Height: PlaneHeight,
+			Vector: NewVector(50.0, ScreenHeight/2),
+
+			PrevX:      0.0,
+			PrevY:      0.0,
+			SpeedLimit: 6.0,
+			Speed:      NewVector(0, 0),
+		},
+		Player2: Rect{
+			Width:      PlaneHeight,
+			Height:     PlaneHeight,
+			Vector:     NewVector(ScreenWidth-PlaneWidth, ScreenHeight/2),
+			PrevX:      0.0,
+			PrevY:      0.0,
+			SpeedLimit: 6.0,
+			Speed:      NewVector(0, 0),
+		},
+		Ball: Rect{
+			Width:  BallDiameter,
+			Height: BallDiameter,
+			Vector: NewVector(ScreenWidth/2, ScreenHeight/2),
+
+			PrevX:      0.0,
+			PrevY:      0.0,
+			SpeedLimit: 6.0,
+			Speed:      NewVector(0, 0),
+		},
 	}
 }
