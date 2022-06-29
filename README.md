@@ -3,6 +3,8 @@ Here is small and very simple concept of online [Air hockey](https://en.wikipedi
 It is using [Ebiten](https://ebiten.org/) - dead simple 2D game engine written in Go to draw,
 And HTTP/UDP to transfer data between clients/server.
 
+![](https://github.com/bkatrenko/game/blob/main/game.gif)
+
 ## Motivation
 I like dead simple and beautiful applications that just do one nice think - allow two people to play online in very ugly 90s like Air-hockey.
 It is also:
