@@ -6,19 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	// maxBufferSize specifies the size of the buffers that
-	// are used to temporarily hold data from the UDP packets
-	// that we receive.
-	maxBufferSize = 1024
-	udpTimeout    = time.Millisecond * 100
-)
+const ()
 
 func init() {
 	// UNIX Time is faster and smaller than most timestamps
@@ -37,7 +30,7 @@ func main() {
 		Msg("start hockey server")
 
 	p := newProc()
-	udpServer := newUDPServer(config, p, newCompressor())
+	udpServer := newUDPServer(config.listenAddressUDP, p, newCompressor())
 	httpServer := newHTTPServer(config, p)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())

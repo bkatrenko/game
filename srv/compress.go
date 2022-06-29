@@ -18,6 +18,9 @@ type (
 	}
 )
 
+// newCompressor is a constructor the the new compressor instance.
+// It is panicking in case of any error while it is a necessary part of the application -
+// and without compressor it is better to crash the application and fix the issue
 func newCompressor() compressor {
 	// Create a writer that caches compressors.
 	// For this operation type we supply a nil Reader.

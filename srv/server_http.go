@@ -13,8 +13,12 @@ import (
 )
 
 const (
+	// RouteGameJoin is route that allow players to join the game.
+	// It is quite extendable way, why "/game" path will probably server some kind of
+	// game metadata in the future
 	RouteGameJoin = "/game/join"
-	RouteHealthz  = "/healthz"
+	// RouteHealthz is just a route for k8s liveness probe
+	RouteHealthz = "/healthz"
 
 	DefaultIdleTimeout       = time.Second * 60
 	DefaultReadTimeout       = time.Second * 15
@@ -24,8 +28,13 @@ const (
 	DefaultMaxHeaderBytes = 1024
 )
 
+// httpServer responsible for serving HTTP requests logic
+// (including requests logging)
 type httpServer struct {
-	proc   Processor
+	// proc is responsible for bringing business logic part
+	proc Processor
+	// server is responsible for service requests and proxy them into the Processor
+	// part
 	server *http.Server
 }
 
