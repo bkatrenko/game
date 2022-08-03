@@ -1,0 +1,98 @@
+# we deploy current applications into a "hockey" namespace to have more control and visibility around
+apiVersion: v1
+kind: Namespace # https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+metadata:
+  labels:
+  name: hockey  # As a best practice, namespace' name should describe its main purpose:
+                # in this case it should be a namespace on the local machine, where
+                # developers could debug and play with the application in the environment
+                # that looks exactly like a local copy of what we have in production
+---
+apiVersion: apps/v1
+kind: Deployment  # https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+metadata:         # Deployment describe which exactly application and in which way will be deployed
+  name: hockey-server # on our newly created k8s cluster
+  namespace: hockey
+spec:
+  replicas: 1     # Currently we use only one replica while we don't need more
+  selector:
+    matchLabels:
+      app:  hockey-server
+  template:
+    metadata:
+      labels:
+        app:  hockey-server
+    spec:
+      containers:
+        - name:  hockey-server
+          image: hockey-server:0.0.5
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: udp
+              containerPort: 8081
+              protocol: UDP
+          env:
+            - name: HTTP_ADDRESS
+              value: ":8080"
+            - name: UDP_ADDRESS
+              value: ":8081"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-hockey-server
+  namespace: hockey
+  labels:
+    app: hockey-server
+spec:
+  type: ClusterIP
+  selector:
+    app: hockey-server
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: udp
+      protocol: UDP
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hockey-nginx-ingress
+  namespace: hockey
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: hockey.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: svc-hockey-server
+            port:
+              name: http
+            

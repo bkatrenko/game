@@ -1,0 +1,96 @@
+package udpserver
+
+import (
+	"context"
+
+	"net/http"
+	"time"
+
+	"github.com/bkatrenko/game/configs/udpserver"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httplog"
+	"github.com/rs/zerolog/log"
+)
+
+const (
+	// RouteGameJoin is route that allow players to join the game.
+	// It is quite extendable way, why "/game" path will probably server some kind of
+	// game metadata in the future
+	RouteGameJoin = "/game/join"
+	// RouteHealthz is just a route for k8s liveness probe
+	RouteHealthz = "/healthz"
+
+	DefaultIdleTimeout       = time.Second * 60
+	DefaultReadTimeout       = time.Second * 15
+	DefaultWriteTimeout      = time.Second * 15
+	DefaultReadHeaderTimeout = time.Second
+
+	DefaultMaxHeaderBytes = 1024
+)
+
+// httpServer responsible for serving HTTP requests logic
+// (including requests logging)
+type HTTPServer struct {
+	// proc is responsible for bringing business logic part
+	proc Processor
+	// server is responsible for service requests and proxy them into the Processor
+	// part
+	server *http.Server
+}
+
+func NewHTTPServer(config udpserver.Config, proc Processor) *HTTPServer {
+	return &HTTPServer{
+		proc: proc,
+		server: &http.Server{
+			Addr:              config.ListenAddressHTTP,
+			ReadTimeout:       DefaultReadTimeout,
+			ReadHeaderTimeout: DefaultReadHeaderTimeout,
+			WriteTimeout:      DefaultWriteTimeout,
+			IdleTimeout:       DefaultIdleTimeout,
+			MaxHeaderBytes:    DefaultMaxHeaderBytes,
+		},
+	}
+}
+
+func (s *HTTPServer) Run(ctx context.Context) {
+	s.server.Handler = s.router()
+	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		panic(err)
+	}
+}
+
+func (s *HTTPServer) Stop(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
+}
+
+func (s *HTTPServer) router() http.Handler {
+	r := chi.NewRouter()
+	logger := httplog.NewLogger("jsonLogger", httplog.Options{
+		JSON: true,
+	})
+
+	// Set a timeout value on the request context (ctx), that will signal
+	// through ctx.Done() that the request has timed out and further
+	// processing should be stopped.
+	r.Use(middleware.Timeout(30 * time.Second))
+	// A good base middleware stack
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(httplog.RequestLogger(logger))
+	r.Use(middleware.Recoverer)
+
+	r.Post(RouteGameJoin, s.handleJoin)
+	r.Get(RouteHealthz, s.handleHealthz)
+
+	return r
+}
+
+func (s *HTTPServer) writeError(w http.ResponseWriter, text string, status int) {
+	w.WriteHeader(status)
+
+	_, err := w.Write([]byte(text))
+	if err != nil {
+		log.Err(err).Msg("error while send response")
+	}
+}
