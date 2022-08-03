@@ -1,4 +1,4 @@
-package main
+package desktop
 
 import (
 	"game/model"
@@ -19,7 +19,7 @@ type Field struct {
 	centerWidth  float64
 }
 
-func newField() Field {
+func NewField() Field {
 	return Field{
 		color: color.RGBA{
 			R: 0,

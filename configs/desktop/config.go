@@ -1,4 +1,4 @@
-package main
+package desktop
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ type Config struct {
 	PlayerNumber int8
 }
 
-func getConfigFromEnv() (Config, error) {
+func GetConfigFromEnv() (Config, error) {
 	config, err := parseConfig()
 	if err != nil {
 		return Config{}, fmt.Errorf("error while parse config: %w", err)

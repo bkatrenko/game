@@ -1,7 +1,8 @@
-package main
+package desktop
 
 import (
 	"game/model"
+	"image/color"
 	"log"
 	"time"
 
@@ -24,7 +25,24 @@ const (
 	player2ScoresPositionY = 20
 )
 
-func initScoresText() {
+// Global variables are here.
+// Usually it is better to NEVER use global variables while in this case we are keeping some
+// kind of "global" state of the application that makes an app quiet impossible to properly test.
+// In exactly this case my motivation is to define font & colors that should be initialised only once and
+// should be never changed after:
+// I don't want to put the variable into "Game" object 'cause it will make Game object dirty.
+// In case we use global variables, it is always better to keep them in "main.go" or cmd package -
+// it would be much more cleaner for maintainers.
+var (
+	player1Score font.Face
+	player2Score font.Face
+
+	player1Color = color.RGBA{0xff, 0, 0, 0xff}
+	player2Color = color.RGBA{0, 0, 0xff, 0xff}
+	ballColor    = color.RGBA{0xff, 0xff, 0xff, 0}
+)
+
+func InitScoresText() {
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
 	if err != nil {
 		log.Fatal(err)
