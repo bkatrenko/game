@@ -1,0 +1,21 @@
+image: hockey-server:0.0.5
+
+containerPortHTTP: 8080
+containerPortUDP: 8081
+ingressHostName: "hockey.dev"
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+
+configs:
+  httpAddress: ":8080"
+  udpAddress: ":8081"
+  healthCheckPort: "8080"
+
+

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment  # https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+metadata:         # Deployment describe which exactly application and in which way will be deployed
+  name: hockey-server # on our newly created k8s cluster
+  namespace: hockey
+spec:
+  replicas: 1     # Currently we use only one replica while we don't need more
+  selector:
+    matchLabels:
+      app:  hockey-server
+  template:
+    metadata:
+      labels:
+        app:  hockey-server
+    spec:
+      containers:
+        - name:  hockey-server
+          image: {{ .Values.image }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPortHTTP }}
+              protocol: TCP
+            - name: udp
+              containerPort: {{ .Values.containerPortUDP }}
+              protocol: UDP
+          env:
+            - name: HTTP_ADDRESS
+              value: {{ .Values.configs.httpAddress }}
+            - name: UDP_ADDRESS
+              value: {{ .Values.configs.udpAddress }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.configs.healthCheckPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3 

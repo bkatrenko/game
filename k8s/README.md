@@ -66,6 +66,6 @@ Command. There should be an indication that server started successfully:
 After we ensure that server works as expected, it's time to start the client with the following command:
 
 ```
-UDP_SERVER_HOST_PORT=hockey.dev:30087 HTTP_SERVER_HOST_PORT=http://hockey.dev:30080 PLAYER_ID=bkatrenko GAME_ID=1 PLAYER_NUMBER=0 ./game
+UDP_SERVER_HOST_PORT=hockey.dev:30087 HTTP_SERVER_HOST_PORT=http://hockey.dev:30080 PLAYER_ID=bkatrenko GAME_ID=1 PLAYER_NUMBER=0 ./desktop
 ```
 Where we could set any GAME_ID and PLAYER_ID. The first player that will join will create a new game.

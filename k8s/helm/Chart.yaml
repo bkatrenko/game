@@ -1,0 +1,8 @@
+apiVersion: v2
+name: game
+description: A Helm chart for Kubernetes
+icon: https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fcommons%2Fthumb%2Fa%2Fa7%2FUkranian_hockey.png%2F115px-Ukranian_hockey.png&f=1&nofb=1
+
+type: application
+version: 0.0.2
+appVersion: "0.0.2"
